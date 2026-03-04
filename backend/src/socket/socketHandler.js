@@ -4,6 +4,7 @@ import Complaint from '../models/Complaint.js';
 import Bin from '../models/Bin.js';
 
 let connectedUsers = new Map();
+let vehicleSubscribers = new Map(); // Track which clients are subscribed to vehicle updates
 
 export const initializeSocket = (httpServer) => {
   const io = new Server(httpServer, {
@@ -23,41 +24,116 @@ export const initializeSocket = (httpServer) => {
       console.log(`User ${userId} logged in`);
     });
 
-    // Vehicle tracking updates
+    /**
+     * Vehicle location update from driver
+     * Emits: vehicleLocationUpdated to all tracking clients
+     */
     socket.on('updateVehicleLocation', async (data) => {
       const { vehicleId, latitude, longitude, status } = data;
 
       try {
+        // Validate coordinates
+        if (!latitude || !longitude || typeof latitude !== 'number' || typeof longitude !== 'number') {
+          socket.emit('error', { message: 'Invalid coordinates' });
+          return;
+        }
+
+        // Rate limiting: only update if last update was more than 2 seconds ago
+        const vehicle = await Vehicle.findById(vehicleId);
+        if (!vehicle) {
+          socket.emit('error', { message: 'Vehicle not found' });
+          return;
+        }
+
+        const timeSinceLastUpdate = Date.now() - (vehicle.lastUpdated?.getTime() || 0);
+        if (timeSinceLastUpdate < 2000) {
+          // Silently ignore updates too close together
+          return;
+        }
+
         // Update vehicle in database
-        const vehicle = await Vehicle.findByIdAndUpdate(
+        const updatedVehicle = await Vehicle.findByIdAndUpdate(
           vehicleId,
           {
             currentLocation: {
               type: 'Point',
               coordinates: [longitude, latitude],
             },
-            status: status || undefined,
+            status: status || vehicle.status,
             lastUpdated: new Date(),
           },
           { new: true }
         );
 
-        if (vehicle) {
-          // Broadcast to all connected clients
+        if (updatedVehicle) {
+          // Broadcast location update to all subscribed clients
           io.emit('vehicleLocationUpdated', {
-            vehicleId: vehicle._id,
-            vehicleRegistration: vehicle.registrationNumber,
+            vehicleId: updatedVehicle._id,
+            vehicleNumber: updatedVehicle.registrationNumber,
+            driverName: updatedVehicle.driverName,
             location: {
-              latitude: vehicle.currentLocation.coordinates[1],
-              longitude: vehicle.currentLocation.coordinates[0],
+              latitude: updatedVehicle.currentLocation.coordinates[1],
+              longitude: updatedVehicle.currentLocation.coordinates[0],
             },
-            status: vehicle.status,
-            timestamp: vehicle.lastUpdated,
+            status: updatedVehicle.status,
+            timestamp: updatedVehicle.lastUpdated,
+          });
+
+          socket.emit('locationUpdateSuccess', {
+            vehicleId: updatedVehicle._id,
+            timestamp: updatedVehicle.lastUpdated,
           });
         }
       } catch (error) {
         console.error('Error updating vehicle location:', error);
+        socket.emit('error', { message: 'Failed to update vehicle location' });
       }
+    });
+
+    /**
+     * Subscribe to vehicle updates
+     * Allows clients to subscribe to updates for specific vehicles
+     */
+    socket.on('subscribeVehicleUpdates', (data) => {
+      const { vehicleId } = data;
+
+      if (!vehicleSubscribers.has(vehicleId)) {
+        vehicleSubscribers.set(vehicleId, []);
+      }
+
+      const subscribers = vehicleSubscribers.get(vehicleId);
+      if (!subscribers.includes(socket.id)) {
+        subscribers.push(socket.id);
+      }
+
+      // Join vehicle-specific room
+      socket.join(`vehicle-${vehicleId}`);
+
+      socket.emit('subscriptionSuccess', {
+        vehicleId,
+        message: `Subscribed to vehicle ${vehicleId} updates`,
+      });
+
+      console.log(`Client ${socket.id} subscribed to vehicle ${vehicleId}`);
+    });
+
+    /**
+     * Unsubscribe from vehicle updates
+     */
+    socket.on('unsubscribeVehicleUpdates', (data) => {
+      const { vehicleId } = data;
+
+      socket.leave(`vehicle-${vehicleId}`);
+
+      if (vehicleSubscribers.has(vehicleId)) {
+        const subscribers = vehicleSubscribers.get(vehicleId);
+        const index = subscribers.indexOf(socket.id);
+        if (index > -1) {
+          subscribers.splice(index, 1);
+        }
+      }
+
+      console.log(`Client ${socket.id} unsubscribed from vehicle ${vehicleId}`);
     });
 
     // Real-time bin fill level updates
@@ -131,7 +207,10 @@ export const initializeSocket = (httpServer) => {
       }
     });
 
-    // Listen for location requests (when users are near vehicles)
+    /**
+     * Check nearby vehicles (real-time)
+     * Allows clients to find vehicles near their location
+     */
     socket.on('checkNearbyVehicles', async (data) => {
       const { latitude, longitude, radius = 0.5 } = data; // radius in km
 
@@ -150,7 +229,7 @@ export const initializeSocket = (httpServer) => {
         });
 
         socket.emit('nearbyVehicles', {
-          vehicles: vehicles.map(v => ({
+          vehicles: vehicles.map((v) => ({
             id: v._id,
             registration: v.registrationNumber,
             driverName: v.driverName,
@@ -162,6 +241,53 @@ export const initializeSocket = (httpServer) => {
         });
       } catch (error) {
         console.error('Error checking nearby vehicles:', error);
+        socket.emit('error', { message: 'Failed to check nearby vehicles' });
+      }
+    });
+
+    /**
+     * Check nearby bins (real-time)
+     * Allows clients to find bins near their location
+     */
+    socket.on('checkNearbyBins', async (data) => {
+      const { latitude, longitude, radius = 2, wasteType } = data; // radius in km
+
+      try {
+        const query = {
+          status: 'active',
+          location: {
+            $near: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [longitude, latitude],
+              },
+              $maxDistance: radius * 1000,
+            },
+          },
+        };
+
+        if (wasteType) {
+          query.wasteType = wasteType;
+        }
+
+        const bins = await Bin.find(query);
+
+        socket.emit('nearbyBins', {
+          bins: bins.map((b) => ({
+            id: b._id,
+            binId: b.binId,
+            address: b.address,
+            wasteType: b.wasteType,
+            location: {
+              latitude: b.location.coordinates[1],
+              longitude: b.location.coordinates[0],
+            },
+            fillLevel: b.currentFillLevel,
+          })),
+        });
+      } catch (error) {
+        console.error('Error checking nearby bins:', error);
+        socket.emit('error', { message: 'Failed to check nearby bins' });
       }
     });
 
@@ -182,6 +308,15 @@ export const initializeSocket = (httpServer) => {
     // Disconnect handler
     socket.on('disconnect', () => {
       connectedUsers.delete(socket.id);
+
+      // Clean up vehicle subscriptions
+      for (const [vehicleId, subscribers] of vehicleSubscribers) {
+        const index = subscribers.indexOf(socket.id);
+        if (index > -1) {
+          subscribers.splice(index, 1);
+        }
+      }
+
       console.log(`User disconnected: ${socket.id}`);
     });
   });

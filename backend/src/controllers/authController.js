@@ -1,5 +1,5 @@
 import User from '../models/User.js';
-import { generateToken } from '../config/jwt.js';
+import { generateToken } from '../../config/jwt.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export const register = async (req, res) => {

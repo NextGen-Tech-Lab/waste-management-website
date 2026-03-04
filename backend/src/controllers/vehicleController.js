@@ -1,5 +1,6 @@
 import Vehicle from '../models/Vehicle.js';
 import { v4 as uuidv4 } from 'uuid';
+import { getNearbyVehicles as getNearbyVehiclesService, isValidCoordinates, calculateEstimatedTime } from '../services/locationService.js';
 
 export const getAllVehicles = async (req, res) => {
   try {
@@ -66,6 +67,13 @@ export const updateVehicleLocation = async (req, res) => {
       return res.status(400).json({ message: 'Location coordinates required' });
     }
 
+    // Validate coordinates
+    if (!isValidCoordinates(latitude, longitude)) {
+      return res.status(400).json({
+        message: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180',
+      });
+    }
+
     const updateData = {
       currentLocation: {
         type: 'Point',
@@ -78,17 +86,30 @@ export const updateVehicleLocation = async (req, res) => {
       updateData.status = status;
     }
 
-    const vehicle = await Vehicle.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
 
-    res.status(200).json({ message: 'Vehicle location updated', vehicle });
+    res.status(200).json({
+      message: 'Vehicle location updated',
+      success: true,
+      vehicle: {
+        _id: vehicle._id,
+        vehicleId: vehicle.vehicleId,
+        registrationNumber: vehicle.registrationNumber,
+        driverName: vehicle.driverName,
+        status: vehicle.status,
+        location: {
+          latitude: vehicle.currentLocation.coordinates[1],
+          longitude: vehicle.currentLocation.coordinates[0],
+        },
+        lastUpdated: vehicle.lastUpdated,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update vehicle', error: error.message });
   }
@@ -141,5 +162,77 @@ export const getVehicleAnalytics = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch analytics', error: error.message });
+  }
+};
+
+/**
+ * Get vehicles nearby user's location
+ * Route: GET /api/vehicles/nearby?lat=40.7128&lng=-74.0060&radius=5
+ */
+export const getNearbyVehicles = async (req, res) => {
+  try {
+    const { lat, lng, radius = 5, status = 'active' } = req.query;
+
+    // Validate required parameters
+    if (!lat || !lng) {
+      return res.status(400).json({
+        message: 'Latitude (lat) and longitude (lng) are required',
+      });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusKm = parseFloat(radius);
+
+    // Validate coordinates
+    if (!isValidCoordinates(latitude, longitude)) {
+      return res.status(400).json({
+        message: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180',
+      });
+    }
+
+    if (radiusKm <= 0 || radiusKm > 100) {
+      return res.status(400).json({
+        message: 'Radius must be between 0 and 100 km',
+      });
+    }
+
+    // Get nearby vehicles
+    const vehiclesWithDistance = await getNearbyVehiclesService(latitude, longitude, radiusKm, status);
+
+    // Enrich with estimated time
+    const enrichedVehicles = vehiclesWithDistance.map((vehicle) => ({
+      _id: vehicle._id,
+      vehicleId: vehicle.vehicleId,
+      registrationNumber: vehicle.registrationNumber,
+      driverName: vehicle.driverName,
+      driverContact: vehicle.driverContact,
+      status: vehicle.status,
+      location: {
+        latitude: vehicle.currentLocation.coordinates[1],
+        longitude: vehicle.currentLocation.coordinates[0],
+      },
+      distance: vehicle.distance,
+      estimatedTimeToReach: calculateEstimatedTime(vehicle.distance),
+      lastUpdated: vehicle.lastUpdated,
+      currentRoute: vehicle.currentRoute,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: enrichedVehicles.length,
+      userLocation: {
+        latitude,
+        longitude,
+      },
+      searchRadius: radiusKm,
+      vehicles: enrichedVehicles,
+    });
+  } catch (error) {
+    console.error('Error fetching nearby vehicles:', error);
+    res.status(500).json({
+      message: 'Failed to fetch nearby vehicles',
+      error: error.message,
+    });
   }
 };

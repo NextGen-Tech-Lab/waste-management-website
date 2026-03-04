@@ -6,6 +6,7 @@ import {
   updateBin,
   deleteBin,
   getBinAnalytics,
+  getNearbyBins,
 } from '../controllers/binController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { apiLimiter, createLimiter } from '../middleware/rateLimiter.js';
@@ -13,6 +14,7 @@ import { apiLimiter, createLimiter } from '../middleware/rateLimiter.js';
 const router = express.Router();
 
 router.get('/', apiLimiter, getAllBins);
+router.get('/nearby', apiLimiter, getNearbyBins);
 router.get('/analytics', authenticate, authorize('admin'), getBinAnalytics);
 router.get('/:id', apiLimiter, getBinById);
 router.post('/', createLimiter, authenticate, authorize('admin'), createBin);

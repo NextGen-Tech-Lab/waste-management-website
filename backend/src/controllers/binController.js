@@ -1,5 +1,6 @@
 import Bin from '../models/Bin.js';
 import { v4 as uuidv4 } from 'uuid';
+import { getNearbyBins as getNearbybinsService, isValidCoordinates, calculateEstimatedTime } from '../services/locationService.js';
 
 export const getAllBins = async (req, res) => {
   try {
@@ -145,5 +146,74 @@ export const getBinAnalytics = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch analytics', error: error.message });
+  }
+};
+
+/**
+ * Get bins nearby user's location with calculated distances
+ * Route: GET /api/bins/nearby?lat=40.7128&lng=-74.0060&radius=2&wasteType=organic&status=active
+ */
+export const getNearbyBins = async (req, res) => {
+  try {
+    const { lat, lng, radius = 2, wasteType, status } = req.query;
+
+    // Validate required parameters
+    if (!lat || !lng) {
+      return res.status(400).json({
+        message: 'Latitude (lat) and longitude (lng) are required',
+      });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusKm = parseFloat(radius);
+
+    // Validate coordinates
+    if (!isValidCoordinates(latitude, longitude)) {
+      return res.status(400).json({
+        message: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180',
+      });
+    }
+
+    if (radiusKm <= 0 || radiusKm > 50) {
+      return res.status(400).json({
+        message: 'Radius must be between 0 and 50 km',
+      });
+    }
+
+    // Build filters
+    const filters = {
+      status: status || 'active', // Default to active bins only
+    };
+
+    if (wasteType) {
+      filters.wasteType = wasteType;
+    }
+
+    // Get nearby bins with distance calculation
+    const binsWithDistance = await getNearbybinsService(latitude, longitude, radiusKm, filters);
+
+    // Add estimated time for user to reach each bin
+    const enrichedBins = binsWithDistance.map((bin) => ({
+      ...bin,
+      estimatedTimeToReach: calculateEstimatedTime(bin.distance),
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: enrichedBins.length,
+      userLocation: {
+        latitude,
+        longitude,
+      },
+      searchRadius: radiusKm,
+      bins: enrichedBins,
+    });
+  } catch (error) {
+    console.error('Error fetching nearby bins:', error);
+    res.status(500).json({
+      message: 'Failed to fetch nearby bins',
+      error: error.message,
+    });
   }
 };

@@ -1,4 +1,4 @@
-import { verifyToken } from '../config/jwt.js';
+import { verifyToken } from '../../config/jwt.js';
 
 export const authenticate = (req, res, next) => {
   try {
