@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Typography, Button, Container, Menu, MenuItem } from '@mui/material';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { useAuth } from './utils/useAuth.js';
@@ -30,9 +30,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   return children;
 };
 
-// Navigation Bar Component
+// Navigation Bar Component - Only shows when authenticated
 const NavBar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenuOpen = (event) => {
@@ -45,33 +47,43 @@ const NavBar = () => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/';
+    navigate('/login');
   };
 
+  // Hide navbar on public auth screens.
+  if (location.pathname === '/login' || location.pathname === '/register') {
+    return null;
+  }
+
+  // Only render navbar for authenticated users
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
-    <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)' }}>
       <Toolbar>
         <Typography
           variant="h6"
           component="div"
-          sx={{ flexGrow: 1, fontWeight: 'bold', cursor: 'pointer' }}
-          onClick={() => (window.location.href = '/')}
+          sx={{ flexGrow: 1, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}
         >
-          ♻️ Waste Management
+          🌍 EcoManage
         </Typography>
 
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <>
             {isAdmin && (
-              <Button color="inherit" href="/admin/dashboard">
-                Admin
+              <Button color="inherit" onClick={() => navigate('/admin/dashboard')}>
+                Admin Dashboard
               </Button>
             )}
-            <Button color="inherit" href={isAdmin ? '/admin/dashboard' : '/user/dashboard'}>
+            <Button color="inherit" onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}>
               Dashboard
             </Button>
-            <Button color="inherit" href="/education">
-              Learn
+            <Button color="inherit" onClick={() => navigate('/education')}>
+              Education Center
             </Button>
 
             <Button
@@ -86,22 +98,13 @@ const NavBar = () => {
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
             >
-              <MenuItem onClick={() => (window.location.href = isAdmin ? '/admin/dashboard' : '/user/dashboard')}>
+              <MenuItem onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}>
                 Profile
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 Logout
               </MenuItem>
             </Menu>
-          </>
-        ) : (
-          <>
-            <Button color="inherit" href="/login" sx={{ mr: 1 }}>
-              Login
-            </Button>
-            <Button color="inherit" variant="outlined" href="/register">
-              Register
-            </Button>
           </>
         )}
       </Toolbar>
@@ -129,10 +132,12 @@ export const AppContent = () => {
       <NavBar />
       <Box sx={{ flex: 1 }}>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
+          {/* Public Routes - Auth Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* Root redirects to login if not authenticated */}
+          <Route path="/" element={<Navigate to="/login" />} />
 
           {/* User Routes */}
           <Route
@@ -213,7 +218,7 @@ export const AppContent = () => {
           />
 
           {/* Catch All */}
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Box>
       <Footer />
