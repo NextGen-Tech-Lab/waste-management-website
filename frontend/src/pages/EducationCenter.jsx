@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -9,22 +9,67 @@ import {
   CircularProgress,
   Button,
   Chip,
-  Modal,
   IconButton,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import educationService from '../services/educationService.js';
+
+// Mock video data for different categories
+const mockVideosByCategory = {
+  waste_segregation: [
+    { id: 'ws1', title: 'How to Segregate Waste at Home', duration: '12:30', thumbnail: '📋', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2500, description: 'Learn the proper way to segregate wet and dry waste at your home.' },
+    { id: 'ws2', title: 'Wet Waste vs Dry Waste Explained', duration: '8:45', thumbnail: '♻️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1800, description: 'Understand the differences between wet and dry waste.' },
+    { id: 'ws3', title: 'Common Segregation Mistakes', duration: '6:20', thumbnail: '⚠️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1200, description: 'Avoid these common mistakes when segregating waste.' },
+    { id: 'ws4', title: 'Medical Waste Management', duration: '10:15', thumbnail: '🏥', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 950, description: 'How to manage medical and hazardous waste safely.' },
+  ],
+  recycling: [
+    { id: 'rc1', title: 'Introduction to Recycling', duration: '14:50', thumbnail: '♻️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 3200, description: 'Understand the basics of recycling and its importance.' },
+    { id: 'rc2', title: 'Recycling Plastics - Do\'s and Don\'ts', duration: '9:30', thumbnail: '🔄', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2100, description: 'Learn which plastics can be recycled and how.' },
+    { id: 'rc3', title: 'E-Waste Recycling Guide', duration: '11:20', thumbnail: '📱', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1650, description: 'Proper disposal and recycling of electronic waste.' },
+    { id: 'rc4', title: 'Paper and Cardboard Recycling', duration: '7:45', thumbnail: '📰', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1400, description: 'How to recycle paper and cardboard products.' },
+    { id: 'rc5', title: 'Metal Recycling Process', duration: '13:10', thumbnail: '⚙️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1100, description: 'Understanding metal recycling and collection.' },
+  ],
+  composting: [
+    { id: 'cm1', title: 'Home Composting Basics', duration: '15:40', thumbnail: '🌱', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2800, description: 'Start composting at home with these simple steps.' },
+    { id: 'cm2', title: 'Building Your Compost Bin', duration: '12:20', thumbnail: '📦', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1900, description: 'DIY guide to building an effective compost bin.' },
+    { id: 'cm3', title: 'Composting Kitchen Waste', duration: '8:50', thumbnail: '🍴', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1600, description: 'Compost your kitchen scraps effectively.' },
+    { id: 'cm4', title: 'Troubleshooting Compost Problems', duration: '10:05', thumbnail: '🔧', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 980, description: 'Solutions to common composting issues.' },
+  ],
+  environmental_impact: [
+    { id: 'ei1', title: 'Impact of Plastic on Environment', duration: '16:30', thumbnail: '🌍', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 3500, description: 'How plastic waste affects our environment.' },
+    { id: 'ei2', title: 'Climate Change and Waste', duration: '13:45', thumbnail: '🌡️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2200, description: 'The connection between waste management and climate.' },
+    { id: 'ei3', title: 'Ocean Pollution Crisis', duration: '11:30', thumbnail: '🌊', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2900, description: 'Understanding ocean pollution from plastic waste.' },
+    { id: 'ei4', title: 'Solutions for a Cleaner Future', duration: '14:20', thumbnail: '✨', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1700, description: 'Innovative solutions to reduce environmental waste impact.' },
+  ],
+  general_tips: [
+    { id: 'gt1', title: 'Zero Waste Living Guide', duration: '18:15', thumbnail: '0️⃣', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2600, description: 'How to reduce waste and live sustainably.' },
+    { id: 'gt2', title: 'Shopping Smart to Reduce Waste', duration: '9:40', thumbnail: '🛍️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1450, description: 'Make sustainable shopping choices.' },
+    { id: 'gt3', title: 'Reusing Items Creatively', duration: '10:25', thumbnail: '🎨', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1800, description: 'Creative ways to reuse everyday items.' },
+  ],
+};
 
 const EducationCenter = () => {
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [selectedVideo, setSelectedVideo] = useState(null);
-  const [likedContent, setLikedContent] = useState(new Set());
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [likedVideos, setLikedVideos] = useState(new Set());
+  const scrollRef = useRef(null);
+
+  const categories = [
+    { id: 'waste_segregation', label: 'Waste Segregation', icon: '📋', color: '#4caf50' },
+    { id: 'recycling', label: 'Recycling', icon: '♻️', color: '#2196f3' },
+    { id: 'composting', label: 'Composting', icon: '🌱', color: '#8bc34a' },
+    { id: 'environmental_impact', label: 'Environmental Impact', icon: '🌍', color: '#ff9800' },
+    { id: 'general_tips', label: 'General Tips', icon: '💡', color: '#9c27b0' },
+  ];
 
   useEffect(() => {
     fetchContent();
@@ -41,44 +86,56 @@ const EducationCenter = () => {
     }
   };
 
-  const handleLike = async (contentId) => {
-    try {
-      await educationService.likeContent(contentId);
-      
-      // Toggle like in local state
-      const newLiked = new Set(likedContent);
-      if (newLiked.has(contentId)) {
-        newLiked.delete(contentId);
-      } else {
-        newLiked.add(contentId);
-      }
-      setLikedContent(newLiked);
-      
-      fetchContent();
-    } catch (error) {
-      console.error('Failed to like content:', error);
+  const getCategoryVideos = (categoryId) => {
+    return mockVideosByCategory[categoryId] || [];
+  };
+
+  const currentVideos = selectedCategory ? getCategoryVideos(selectedCategory) : [];
+  const currentVideo = currentVideos[currentVideoIndex];
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory(categoryId);
+    setCurrentVideoIndex(0);
+    setLikedVideos(new Set());
+  };
+
+  const handleVideoClick = (index) => {
+    setCurrentVideoIndex(index);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
   };
 
-  const handleVideoClick = async (video) => {
-    setSelectedVideo(video);
-    // Increment views when video is clicked
-    try {
-      await educationService.getContentById(video._id);
-    } catch (error) {
-      console.error('Failed to update views:', error);
+  const handleNextVideo = () => {
+    if (currentVideoIndex < currentVideos.length - 1) {
+      setCurrentVideoIndex(currentVideoIndex + 1);
     }
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      waste_segregation: '#4caf50',
-      recycling: '#2196f3',
-      composting: '#8bc34a',
-      environmental_impact: '#ff9800',
-      general_tips: '#9c27b0',
-    };
-    return colors[category] || '#999';
+  const handlePrevVideo = () => {
+    if (currentVideoIndex > 0) {
+      setCurrentVideoIndex(currentVideoIndex - 1);
+    }
+  };
+
+  const handleLike = (videoId) => {
+    const newLiked = new Set(likedVideos);
+    if (newLiked.has(videoId)) {
+      newLiked.delete(videoId);
+    } else {
+      newLiked.add(videoId);
+    }
+    setLikedVideos(newLiked);
+  };
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === 'right' ? scrollAmount : -scrollAmount,
+        behavior: 'smooth',
+      });
+    }
   };
 
   if (loading) {
@@ -89,256 +146,93 @@ const EducationCenter = () => {
     );
   }
 
+  const selectedCategoryData = categories.find((cat) => cat.id === selectedCategory);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-        📚 Learn About Waste Management
-      </Typography>
+      {!selectedCategory ? (
+        <>
+          {/* Category Selection View */}
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
+            📚 Learn About Waste Management
+          </Typography>
 
-      {/* Filter Buttons */}
-      <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        <Button
-          variant={filter === '' ? 'contained' : 'outlined'}
-          onClick={() => setFilter('')}
-        >
-          All
-        </Button>
-        <Button
-          variant={filter === 'waste_segregation' ? 'contained' : 'outlined'}
-          onClick={() => setFilter('waste_segregation')}
-        >
-          Waste Segregation
-        </Button>
-        <Button
-          variant={filter === 'recycling' ? 'contained' : 'outlined'}
-          onClick={() => setFilter('recycling')}
-        >
-          Recycling
-        </Button>
-        <Button
-          variant={filter === 'composting' ? 'contained' : 'outlined'}
-          onClick={() => setFilter('composting')}
-        >
-          Composting
-        </Button>
-        <Button
-          variant={filter === 'environmental_impact' ? 'contained' : 'outlined'}
-          onClick={() => setFilter('environmental_impact')}
-        >
-          Environmental Impact
-        </Button>
-      </Box>
-
-      {/* Content Grid */}
-      <Grid container spacing={3}>
-        {(filter ? content.filter((c) => c.category === filter) : content).map((item) => (
-          <Grid item xs={12} sm={6} md={4} key={item._id}>
-            {item.contentType === 'video' ? (
-              // Video Card with Play Button
-              <Card
-                sx={{
-                  boxShadow: 2,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  transition: 'transform 0.3s ease, boxShadow 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 4,
-                  },
-                }}
-              >
-                {/* Video Thumbnail with Play Button */}
-                <Box
+          <Grid container spacing={3}>
+            {categories.map((category) => (
+              <Grid item xs={12} sm={6} md={4} key={category.id}>
+                <Card
+                  onClick={() => handleCategorySelect(category.id)}
                   sx={{
-                    height: 220,
-                    backgroundImage: `url(${item.thumbnail || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"%3E%3Crect fill="%23333" width="400" height="300"/%3E%3C/svg%3E'})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#f0f0f0',
                     cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: 6,
+                    },
+                    borderTop: `4px solid ${category.color}`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
-                  onClick={() => handleVideoClick(item)}
                 >
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'backgroundColor 0.3s ease',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                      },
-                    }}
-                  >
-                    <PlayArrowIcon sx={{ fontSize: 60, color: 'white' }} />
-                  </Box>
-                </Box>
-
-                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                    <Chip
-                      label={item.category.replace(/_/g, ' ')}
-                      size="small"
-                      sx={{ bgcolor: getCategoryColor(item.category), color: 'white' }}
-                    />
-                    <Chip
-                      label="🎥 Video"
-                      size="small"
-                      variant="outlined"
-                      sx={{ backgroundColor: '#e3f2fd' }}
-                    />
-                  </Box>
-
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 1 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 2, minHeight: 50, flex: 1 }}>
-                    {item.description.substring(0, 100)}...
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2, fontSize: '0.875rem', color: '#999' }}>
-                    <span>👁️ {item.views || 0}</span>
-                    <span>❤️ {item.likes || 0}</span>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="small"
-                      sx={{ bgcolor: '#1976d2' }}
-                      onClick={() => handleVideoClick(item)}
-                      startIcon={<PlayArrowIcon />}
-                    >
-                      Play
+                  <CardContent sx={{ textAlign: 'center', flex: 1 }}>
+                    <Typography sx={{ fontSize: 48, mb: 2 }}>{category.icon}</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                      {category.label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>
+                      {getCategoryVideos(category.id).length} Videos
+                    </Typography>
+                    <Button variant="contained" sx={{ backgroundColor: category.color }}>
+                      Start Learning
                     </Button>
-                    <Tooltip title={likedContent.has(item._id) ? 'Unlike' : 'Like'}>
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleLike(item._id)}
-                        startIcon={likedContent.has(item._id) ? <FavoriteIcon sx={{ color: 'red' }} /> : <FavoriteBorderIcon />}
-                      >
-                        Like
-                      </Button>
-                    </Tooltip>
-                  </Box>
-                </CardContent>
-              </Card>
-            ) : (
-              // Article/Infographic Card
-              <Card sx={{ boxShadow: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {item.thumbnail && (
-                  <Box
-                    sx={{
-                      height: 200,
-                      backgroundImage: `url(${item.thumbnail})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                )}
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                    <Chip
-                      label={item.category.replace(/_/g, ' ')}
-                      size="small"
-                      sx={{ bgcolor: getCategoryColor(item.category), color: 'white' }}
-                    />
-                    <Chip
-                      label={item.contentType}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </Box>
-
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 1 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 2, minHeight: 50 }}>
-                    {item.description.substring(0, 100)}...
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, fontSize: '0.875rem' }}>
-                    <span>👁️ {item.views || 0} views</span>
-                    <span>❤️ {item.likes || 0} likes</span>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button fullWidth variant="contained" size="small">
-                      Read More
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleLike(item._id)}
-                    >
-                      👍 Like
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
-
-      {/* Video Modal */}
-      <Modal
-        open={!!selectedVideo}
-        onClose={() => setSelectedVideo(null)}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        }}
-      >
-        <Box
-          sx={{
-            position: 'relative',
-            width: '90%',
-            maxWidth: 600,
-            maxHeight: '90vh',
-            backgroundColor: '#000',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          {selectedVideo && (
-            <>
-              {/* Close Button */}
-              <IconButton
-                onClick={() => setSelectedVideo(null)}
-                sx={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 10,
-                  zIndex: 10,
-                  color: 'white',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.7)' },
+        </>
+      ) : (
+        <>
+          {/* Learning Session View */}
+          <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setCurrentVideoIndex(0);
                 }}
               >
-                <CloseIcon />
-              </IconButton>
+                ← Back
+              </Button>
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                {selectedCategoryData?.icon} {selectedCategoryData?.label}
+              </Typography>
+              <Chip
+                label={`${currentVideoIndex + 1}/${currentVideos.length}`}
+                sx={{ backgroundColor: selectedCategoryData?.color, color: 'white' }}
+              />
+            </Box>
+          </Box>
 
+          {currentVideo && (
+            <>
               {/* Video Player */}
-              <Box sx={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+              <Paper
+                sx={{
+                  mb: 4,
+                  backgroundColor: '#000',
+                  position: 'relative',
+                  paddingBottom: '56.25%',
+                  height: 0,
+                  overflow: 'hidden',
+                  borderRadius: 2,
+                }}
+              >
                 <Box
                   component="iframe"
-                  src={getVideoEmbedUrl(selectedVideo.videoURL)}
+                  src={currentVideo.url}
                   sx={{
                     position: 'absolute',
                     top: 0,
@@ -350,49 +244,200 @@ const EducationCenter = () => {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-              </Box>
+              </Paper>
 
               {/* Video Info */}
-              <Box sx={{ p: 2, color: 'white' }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  {selectedVideo.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#ccc', mb: 2 }}>
-                  {selectedVideo.description}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, fontSize: '0.875rem' }}>
-                  <span>👁️ {selectedVideo.views || 0} views</span>
-                  <span>❤️ {selectedVideo.likes || 0} likes</span>
+              <Paper sx={{ p: 3, mb: 4, backgroundColor: '#f9f9f9' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      {currentVideo.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      {currentVideo.description}
+                    </Typography>
+                  </Box>
+                  <Tooltip title={likedVideos.has(currentVideo.id) ? 'Unlike' : 'Like'}>
+                    <IconButton
+                      onClick={() => handleLike(currentVideo.id)}
+                      sx={{
+                        color: likedVideos.has(currentVideo.id) ? 'red' : 'inherit',
+                        fontSize: 28,
+                      }}
+                    >
+                      {likedVideos.has(currentVideo.id) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                    </IconButton>
+                  </Tooltip>
                 </Box>
+
+                <Box sx={{ display: 'flex', gap: 3, mb: 2, fontSize: '0.875rem', color: '#999' }}>
+                  <span>⏱️ {currentVideo.duration}</span>
+                  <span>👁️ {currentVideo.views} views</span>
+                </Box>
+
+                {/* Navigation Buttons */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="outlined"
+                    disabled={currentVideoIndex === 0}
+                    onClick={handlePrevVideo}
+                  >
+                    ← Previous Video
+                  </Button>
+                  <Button
+                    variant="contained"
+                    disabled={currentVideoIndex === currentVideos.length - 1}
+                    onClick={handleNextVideo}
+                    sx={{ backgroundColor: selectedCategoryData?.color }}
+                  >
+                    Next Video →
+                  </Button>
+                </Box>
+              </Paper>
+
+              {/* Videos List with Scrolling */}
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                Related Videos in This Session
+              </Typography>
+
+              <Box sx={{ position: 'relative', mb: 4 }}>
+                {/* Left Arrow */}
+                {currentVideoIndex > 0 && (
+                  <IconButton
+                    onClick={() => handleScroll('left')}
+                    sx={{
+                      position: 'absolute',
+                      left: -50,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      backgroundColor: selectedCategoryData?.color,
+                      color: 'white',
+                      '&:hover': { backgroundColor: selectedCategoryData?.color },
+                    }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                )}
+
+                {/* Scrollable Video List */}
+                <Box
+                  ref={scrollRef}
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    overflowX: 'auto',
+                    scrollBehavior: 'smooth',
+                    pb: 2,
+                    '&::-webkit-scrollbar': {
+                      height: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: '#f1f1f1',
+                      borderRadius: 10,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: selectedCategoryData?.color,
+                      borderRadius: 10,
+                      '&:hover': {
+                        backgroundColor: selectedCategoryData?.color,
+                      },
+                    },
+                  }}
+                >
+                  {currentVideos.map((video, index) => (
+                    <Card
+                      key={video.id}
+                      onClick={() => handleVideoClick(index)}
+                      sx={{
+                        minWidth: 280,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        border:
+                          index === currentVideoIndex
+                            ? `3px solid ${selectedCategoryData?.color}`
+                            : '1px solid #ddd',
+                        backgroundColor: index === currentVideoIndex ? '#f0f0f0' : '#fff',
+                        '&:hover': {
+                          boxShadow: 3,
+                          transform: 'translateY(-4px)',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: 160,
+                          backgroundColor: '#333',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 60,
+                          position: 'relative',
+                        }}
+                      >
+                        {video.thumbnail}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            bottom: 8,
+                            right: 8,
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: 1,
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {video.duration}
+                        </Box>
+                      </Box>
+                      <CardContent sx={{ p: 2 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {video.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, fontSize: '0.75rem', color: '#999' }}>
+                          <span>👁️ {video.views}</span>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+
+                {/* Right Arrow */}
+                {currentVideoIndex < currentVideos.length - 3 && (
+                  <IconButton
+                    onClick={() => handleScroll('right')}
+                    sx={{
+                      position: 'absolute',
+                      right: -50,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      backgroundColor: selectedCategoryData?.color,
+                      color: 'white',
+                      '&:hover': { backgroundColor: selectedCategoryData?.color },
+                    }}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                )}
               </Box>
             </>
           )}
-        </Box>
-      </Modal>
+        </>
+      )}
     </Container>
   );
-};
-
-// Helper function to convert video URLs to embed URLs
-const getVideoEmbedUrl = (url) => {
-  if (!url) return '';
-  
-  // YouTube
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    const videoId = url.includes('youtu.be') 
-      ? url.split('youtu.be/')[1]?.split('?')[0]
-      : new URLSearchParams(new URL(url).search).get('v');
-    return `https://www.youtube.com/embed/${videoId}`;
-  }
-  
-  // Vimeo
-  if (url.includes('vimeo.com')) {
-    const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
-    return `https://player.vimeo.com/video/${videoId}`;
-  }
-  
-  // Direct video files
-  return url;
 };
 
 export default EducationCenter;
