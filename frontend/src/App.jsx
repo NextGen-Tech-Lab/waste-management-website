@@ -55,18 +55,39 @@ const NavBar = () => {
     return null;
   }
 
+  // Admin dashboard has its own shell navigation.
+  if (location.pathname === '/admin/dashboard') {
+    return null;
+  }
+
   // Only render navbar for authenticated users
   if (!isAuthenticated) {
     return null;
   }
 
   return (
-    <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)' }}>
-      <Toolbar>
+    <AppBar
+      position="sticky"
+      elevation={0}
+      sx={{
+        background: 'rgba(248, 250, 248, 0.92)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid #e1e3e1',
+        color: '#191c1b',
+      }}
+    >
+      <Toolbar sx={{ minHeight: '64px' }}>
         <Typography
           variant="h6"
           component="div"
-          sx={{ flexGrow: 1, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          sx={{
+            flexGrow: 1,
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            color: '#00450d',
+          }}
           onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}
         >
           🌍 EcoManage
@@ -75,21 +96,23 @@ const NavBar = () => {
         {isAuthenticated && (
           <>
             {isAdmin && (
-              <Button color="inherit" onClick={() => navigate('/admin/dashboard')}>
+              <Button sx={{ color: '#2f332f', fontWeight: 700 }} onClick={() => navigate('/admin/dashboard')}>
                 Admin Dashboard
               </Button>
             )}
-            <Button color="inherit" onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}>
+            <Button
+              sx={{ color: '#2f332f', fontWeight: 700 }}
+              onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}
+            >
               Dashboard
             </Button>
-            <Button color="inherit" onClick={() => navigate('/education')}>
+            <Button sx={{ color: '#2f332f', fontWeight: 700 }} onClick={() => navigate('/education')}>
               Education Center
             </Button>
 
             <Button
-              color="inherit"
+              sx={{ color: '#2f332f', fontWeight: 700, ml: 2 }}
               onClick={handleMenuOpen}
-              sx={{ ml: 2 }}
             >
               {user?.name} ▼
             </Button>
@@ -114,6 +137,12 @@ const NavBar = () => {
 
 // Footer Component
 const Footer = () => {
+  const location = useLocation();
+
+  if (location.pathname === '/admin/dashboard') {
+    return null;
+  }
+
   return (
     <Box sx={{ background: '#f5f5f5', py: 3, mt: 6 }}>
       <Container maxWidth="lg">
