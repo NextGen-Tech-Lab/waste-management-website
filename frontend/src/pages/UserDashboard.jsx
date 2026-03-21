@@ -262,22 +262,22 @@ const UserDashboard = () => {
               <h3 className="card-title">Quick Actions</h3>
               <div className="actions-grid">
                 <button className="action-card" onClick={() => handleNavigate('/user/bins')}>
-                  <span className="action-icon">O</span>
+                  <span className="action-icon">📍</span>
                   <span className="action-label">Locate Bins</span>
                   <span className="action-desc">Find nearby disposal points</span>
                 </button>
                 <button className="action-card" onClick={() => handleNavigate('/user/tracking')}>
-                  <span className="action-icon">V</span>
+                  <span className="action-icon">🚚</span>
                   <span className="action-label">Track Vehicle</span>
                   <span className="action-desc">Live garbage truck route</span>
                 </button>
                 <button className="action-card" onClick={() => handleNavigate('/user/complaints')}>
-                  <span className="action-icon">!</span>
+                  <span className="action-icon">❗</span>
                   <span className="action-label">Lodge Complaint</span>
                   <span className="action-desc">Report littering or spills</span>
                 </button>
                 <button className="action-card" onClick={() => handleNavigate('/education')}>
-                  <span className="action-icon">E</span>
+                  <span className="action-icon">📘</span>
                   <span className="action-label">Waste Education</span>
                   <span className="action-desc">Sorting and recycling guide</span>
                 </button>

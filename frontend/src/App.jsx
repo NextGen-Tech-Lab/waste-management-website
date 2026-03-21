@@ -17,14 +17,32 @@ import EducationCenter from './pages/EducationCenter.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Check both context state and localStorage for token
+  const hasToken = isAuthenticated || !!localStorage.getItem('token');
 
-  if (!isAuthenticated) {
+  if (!hasToken) {
     return <Navigate to="/login" />;
   }
 
-  if (requiredRole === 'admin' && !isAdmin) {
-    return <Navigate to="/user/dashboard" />;
+  if (requiredRole === 'admin') {
+    // Check if user has admin role - check both context and localStorage
+    const contextIsAdmin = user?.role === 'admin';
+    let storageIsAdmin = false;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        storageIsAdmin = parsedUser?.role === 'admin';
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+    
+    if (!contextIsAdmin && !storageIsAdmin) {
+      return <Navigate to="/user/dashboard" />;
+    }
   }
 
   return children;
