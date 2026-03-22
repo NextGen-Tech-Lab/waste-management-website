@@ -48,51 +48,6 @@ const Impact = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8faf8' }}>
-      {/* Header with Navigation */}
-      <Box sx={{ background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)', color: 'white', py: 3 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 'bold', cursor: 'pointer' }}
-              onClick={() => navigate('/login')}
-            >
-              🌍 EcoManage India
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-              <Typography
-                variant="body1"
-                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                onClick={() => navigate('/schemes')}
-              >
-                Schemes
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                onClick={() => navigate('/impact')}
-              >
-                Impact
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                onClick={() => navigate('/resources')}
-              >
-                Resources
-              </Typography>
-              <Button
-                variant="contained"
-                sx={{ bgcolor: 'white', color: '#1b5e20', fontWeight: 'bold' }}
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
-
       {/* Hero Section */}
       <Box sx={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)', color: 'white', py: 8 }}>
         <Container maxWidth="lg">

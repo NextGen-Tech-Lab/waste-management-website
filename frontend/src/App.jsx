@@ -106,8 +106,8 @@ const NavBar = () => {
     return null;
   }
 
-  // Admin dashboard has its own shell navigation.
-  if (location.pathname === '/admin/dashboard') {
+  // Admin section has its own shell navigation - hide navbar for all admin routes
+  if (location.pathname.startsWith('/admin/')) {
     return null;
   }
 
@@ -230,6 +230,27 @@ const NavBar = () => {
                 </Box>
               </MenuItem>
             </Menu>
+
+            <Button
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
+              onClick={() => navigate('/schemes')}
+            >
+              Schemes
+            </Button>
+
+            <Button
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
+              onClick={() => navigate('/impact')}
+            >
+              Impact
+            </Button>
+
+            <Button
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
+              onClick={() => navigate('/resources')}
+            >
+              Resources
+            </Button>
 
             <Button
               sx={{ color: '#ffffff', fontWeight: 700, ml: 2, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
