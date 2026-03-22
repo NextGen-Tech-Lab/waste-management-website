@@ -5,32 +5,43 @@ export const createComplaint = async (req, res) => {
   try {
     const { binId, vehicleId, category, subject, description, severity, location, attachments } = req.body;
 
+    console.log('Request user:', req.user);
+    console.log('Request body:', req.body);
+
     if (!category || !subject || !description) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const complaint = new Complaint({
+    const complaintData = {
       complaintId: uuidv4(),
       userId: req.user.userId,
-      binId,
-      vehicleId,
       category,
       subject,
       description,
       severity: severity || 'medium',
-      location: location
-        ? {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude],
-          }
-        : undefined,
       attachments: attachments || [],
       status: 'pending',
-    });
+    };
 
+    // Only add binId and vehicleId if they exist
+    if (binId) complaintData.binId = binId;
+    if (vehicleId) complaintData.vehicleId = vehicleId;
+
+    // Only add location if it's provided with valid coordinates
+    if (location && location.longitude !== undefined && location.latitude !== undefined) {
+      complaintData.location = {
+        type: 'Point',
+        coordinates: [location.longitude, location.latitude],
+      };
+    }
+
+    const complaint = new Complaint(complaintData);
+
+    console.log('Complaint object:', complaint);
     await complaint.save();
     res.status(201).json({ message: 'Complaint submitted', complaint });
   } catch (error) {
+    console.error('Complaint creation error:', error);
     res.status(500).json({ message: 'Failed to create complaint', error: error.message });
   }
 };

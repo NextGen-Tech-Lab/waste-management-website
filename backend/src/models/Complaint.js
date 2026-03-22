@@ -44,12 +44,8 @@ const complaintSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ['Point'],
-        default: 'Point',
       },
-      coordinates: {
-        type: [Number],
-        required: false,
-      },
+      coordinates: [Number],
     },
     attachments: [
       {
@@ -75,24 +71,15 @@ const complaintSchema = new mongoose.Schema(
         addedAt: Date,
       },
     ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
     resolvedAt: {
       type: Date,
       required: false,
     },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+  }
 );
-
-// Create geospatial index
-complaintSchema.index({ 'location': '2dsphere' });
 
 const Complaint = mongoose.model('Complaint', complaintSchema);
 export default Complaint;

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -40,7 +39,11 @@ const ComplaintManagement = () => {
     subject: '',
     description: '',
     severity: 'medium',
+    location: null,
+    attachments: [],
   });
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   useEffect(() => {
     fetchComplaints();
@@ -61,6 +64,63 @@ const ComplaintManagement = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const getAutoLocation = () => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFormData((prev) => ({
+            ...prev,
+            location: { latitude, longitude },
+          }));
+          setMessage(`Location detected: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setMessageType('success');
+          setLocationLoading(false);
+        },
+        (error) => {
+          setMessage('Unable to get location. Please enable location services.');
+          setMessageType('error');
+          setLocationLoading(false);
+        }
+      );
+    } else {
+      setMessage('Geolocation is not supported by your browser');
+      setMessageType('error');
+      setLocationLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage('Photo size must be less than 5MB');
+        setMessageType('error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          attachments: [
+            {
+              url: reader.result,
+              type: 'image',
+              uploadedAt: new Date(),
+            },
+          ],
+        }));
+        setPhotoPreview(reader.result);
+        setMessage('Photo added successfully');
+        setMessageType('success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleOpenDialog = (complaint = null) => {
     if (complaint) {
       setEditingComplaint(complaint);
@@ -72,7 +132,10 @@ const ComplaintManagement = () => {
         subject: '',
         description: '',
         severity: 'medium',
+        location: null,
+        attachments: [],
       });
+      setPhotoPreview(null);
     }
     setOpenDialog(true);
   };
@@ -242,6 +305,75 @@ const ComplaintManagement = () => {
                   <MenuItem value="critical">Critical</MenuItem>
                 </Select>
               </FormControl>
+
+              {/* Location Section */}
+              <Box sx={{ mt: 3, mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+                  📍 Location
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={getAutoLocation}
+                  disabled={locationLoading}
+                  sx={{ mb: 2 }}
+                >
+                  {locationLoading ? 'Detecting Location...' : 'Auto Detect Location'}
+                </Button>
+                {formData.location && (
+                  <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                    <Typography variant="body2" color="success.main">
+                      ✓ Location Detected
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+                      Latitude: {formData.location.latitude?.toFixed(4)}, Longitude: {formData.location.longitude?.toFixed(4)}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Photo Upload Section */}
+              <Box sx={{ mt: 3, mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+                  📷 Attach Photo
+                </Typography>
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="photo-input"
+                  type="file"
+                  onChange={handlePhotoUpload}
+                />
+                <label htmlFor="photo-input">
+                  <Button variant="outlined" component="span" fullWidth>
+                    Choose Photo
+                  </Button>
+                </label>
+                {photoPreview && (
+                  <Box sx={{ mt: 2 }}>
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '200px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                      }}
+                    />
+                    <Button
+                      variant="text"
+                      size="small"
+                      sx={{ mt: 1 }}
+                      onClick={() => {
+                        setPhotoPreview(null);
+                        setFormData((prev) => ({ ...prev, attachments: [] }));
+                      }}
+                    >
+                      Remove Photo
+                    </Button>
+                  </Box>
+                )}
+              </Box>
             </>
           ) : (
             <>
