@@ -35,7 +35,9 @@ const Login = () => {
     setLoading('citizen', true);
 
     try {
-      await login(citizenData.email, citizenData.password);
+      const email = citizenData.email.trim().toLowerCase();
+      const password = citizenData.password.trim();
+      await login(email, password);
       navigate('/user/dashboard');
     } catch (err) {
       setCitizenError(err.response?.data?.message || 'Invalid credentials. Please try again.');
@@ -51,7 +53,9 @@ const Login = () => {
     setLoading('admin', true);
 
     try {
-      const authResult = await login(adminData.email, adminData.password);
+      const email = adminData.email.trim().toLowerCase();
+      const password = adminData.password.trim();
+      const authResult = await login(email, password);
       const isAdmin = authResult?.user?.role === 'admin';
       if (!isAdmin) {
         setAdminError('This account does not have admin access.');
@@ -136,7 +140,7 @@ const Login = () => {
                   type="email"
                   value={citizenData.email}
                   onChange={handleCitizenChange}
-                  placeholder="citizen@example.com"
+                  placeholder="user@example.com"
                   required
                 />
               </div>
@@ -148,9 +152,13 @@ const Login = () => {
                   type="password"
                   value={citizenData.password}
                   onChange={handleCitizenChange}
-                  placeholder="••••••••"
+                  placeholder="123456"
                   required
                 />
+              </div>
+
+              <div className="inline-action-row">
+                <span className="register-link muted">Demo citizen login: user@example.com / 123456</span>
               </div>
 
               {loginError && <div className="error-box">{loginError}</div>}

@@ -31,6 +31,30 @@ export const routeService = {
     const response = await apiClient.get('/routes/analytics');
     return response.data;
   },
+
+  getLogisticsMapData: async (city = 'chennai') => {
+    const response = await apiClient.get(`/routes/logistics-map?city=${city}`);
+    return response.data;
+  },
+
+  getLogisticsLiveData: async (city = 'chennai') => {
+    const response = await apiClient.get(`/routes/logistics-live?city=${city}`);
+    return response.data;
+  },
+
+  updateLogisticsLiveToggle: async (type, id, enabled, city = 'chennai') => {
+    const response = await apiClient.put(`/routes/logistics-live/toggle?city=${city}`, {
+      type,
+      id,
+      enabled,
+    });
+    return response.data;
+  },
+
+  seedChennaiDemoData: async () => {
+    const response = await apiClient.post('/routes/seed-demo/chennai');
+    return response.data;
+  },
 };
 
 export default routeService;

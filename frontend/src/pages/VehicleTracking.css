@@ -1,0 +1,234 @@
+.tracking-page {
+  min-height: calc(100vh - 64px);
+  background: #f8faf8;
+  color: #191c1b;
+  padding: 1.25rem;
+}
+
+.tracking-hero {
+  max-width: 1200px;
+  margin: 0 auto 1rem;
+  border-radius: 0.8rem;
+  background: linear-gradient(130deg, #0f5c17 0%, #176f22 100%);
+  color: #ffffff;
+  padding: 1.4rem 1.6rem;
+}
+
+.tracking-hero-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.tracking-hero h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.6vw, 2.2rem);
+  font-family: 'Public Sans', sans-serif;
+}
+
+.tracking-hero p {
+  margin: 0.55rem 0 0;
+  color: #c9eec9;
+  max-width: 760px;
+}
+
+.tracking-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.9rem;
+}
+
+.tracking-card {
+  border: 1px solid #dfe6de;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.9rem;
+}
+
+.tracking-map-card {
+  grid-row: span 2;
+}
+
+.tracking-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-family: 'Public Sans', sans-serif;
+}
+
+.tracking-subtitle {
+  margin: 0.4rem 0 0.75rem;
+  color: #4a5148;
+  font-size: 0.9rem;
+}
+
+.tracking-map-wrap {
+  height: 560px;
+  border: 1px solid #e1e5df;
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+
+.tracking-info-card,
+.tracking-bins-card {
+  align-self: start;
+}
+
+.tracking-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #edf1ea;
+  font-size: 0.88rem;
+}
+
+.tracking-meta-row span {
+  color: #596359;
+  font-weight: 600;
+}
+
+.tracking-meta-row b {
+  color: #1f3a23;
+  text-align: right;
+}
+
+.tracking-note {
+  margin: 0.7rem 0 0;
+  font-size: 0.83rem;
+  color: #546154;
+}
+
+.tracking-bin-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-bin-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  border-bottom: 1px solid #edf1ea;
+  padding: 0.55rem 0;
+  font-size: 0.84rem;
+}
+
+.tracking-bin-row span {
+  color: #556356;
+}
+
+.tracking-error {
+  max-width: 1200px;
+  margin: 0 auto 0.8rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.45rem;
+  background: #ffdad6;
+  color: #ba1a1a;
+  font-size: 0.87rem;
+}
+
+.tracking-loading,
+.tracking-empty {
+  max-width: 1200px;
+  margin: 0.7rem auto;
+  color: #657165;
+  font-weight: 600;
+}
+
+.tracking-marker {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid #0f7c21;
+  background: #ffffff;
+  box-shadow: 0 6px 14px rgba(17, 26, 20, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tracking-marker--truck {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #fff8eb;
+}
+
+.tracking-marker--bin {
+  background: #effdf1;
+}
+
+.tracking-marker--facility {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border-color: #1b5bc7;
+  background: #e7f0ff;
+}
+
+.tracking-marker-emoji {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.tracking-marker-label {
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  transform: translateX(-50%);
+  background: #11151a;
+  color: #ffffff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.18rem 0.32rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tracking-marker-badge {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  color: #ffffff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.18rem 0.32rem;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+}
+
+@media (max-width: 1100px) {
+  .tracking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tracking-map-card {
+    grid-row: auto;
+  }
+
+  .tracking-map-wrap {
+    height: 460px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tracking-page {
+    padding: 0.8rem;
+  }
+
+  .tracking-hero {
+    padding: 1.05rem 1rem;
+  }
+
+  .tracking-map-wrap {
+    height: 360px;
+  }
+}

@@ -1,0 +1,66 @@
+Revise the Citizen Dashboard code you generated. Keep the same visual design language, but fix architecture/integration issues so it can be dropped into an existing React Vite app cleanly.
+
+Hard requirements:
+1. Output ONLY:
+   - UserDashboard.jsx
+   - UserDashboard.css
+   No raw HTML page, no <html>/<head>/<script> blocks, no Tailwind CDN config.
+
+2. React integration:
+   - Use React functional component only.
+   - Use existing auth context (current user, logout).
+   - Use existing service layer calls instead of hardcoded timeout:
+     - getProfile()
+     - updateProfile()
+     - getCitizenDashboardSummary()
+   - No fake API delay with setTimeout.
+
+3. Routing behavior:
+   - Use react-router navigation (navigate or Link) for internal routes.
+   - Do not use plain <a href> for app-internal navigation.
+   - Routes:
+     - /user/bins
+     - /user/tracking
+     - /user/complaints
+     - /education
+
+4. Data/state behavior:
+   - Keep fallback defaults, but use them only when API fails.
+   - Add true loading state + content skeletons.
+   - Add explicit empty state for recent activity list.
+   - Add robust null guards for all profile/stats fields.
+
+5. Profile edit modal:
+   - Controlled inputs.
+   - Cancel closes without mutation.
+   - Save calls updateProfile and updates UI state.
+   - Show success/error message on save.
+
+6. App layout compatibility:
+   - Do NOT add duplicated global app navbar/footer inside dashboard component unless explicitly requested.
+   - Dashboard should render content region compatible with existing app shell.
+
+7. Accessibility:
+   - Proper labels/aria for form fields and modal.
+   - Keyboard focus styles.
+   - Escape key closes modal.
+   - Add prefers-reduced-motion support.
+
+8. CSS quality:
+   - Scope all selectors under a root class (e.g., .user-dashboard) to avoid global style leakage.
+   - Avoid global :root overrides unless namespaced.
+   - Keep responsive behavior at 320px, 768px, 1100px+.
+
+9. Keep these existing visual sections:
+   - Welcome hero
+   - Profile card
+   - Route status
+   - Metrics row
+   - Quick actions
+   - Recent activity
+   - Help/escalation panel
+
+10. Add a short assumptions note at end:
+   - exact imports used
+   - assumed service method signatures
+   - any required prop/context assumptions

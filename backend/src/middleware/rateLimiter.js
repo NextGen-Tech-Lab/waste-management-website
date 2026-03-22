@@ -12,6 +12,12 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
 });
 
+export const liveTrackingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 2000, // allow frequent polling for live logistics updates
+  message: 'Too many live tracking requests from this IP, please slow down.',
+});
+
 export const createLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 50, // limit each IP to 50 requests per windowMs

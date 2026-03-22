@@ -1,7 +1,54 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/useAuth';
+import routeService from '../services/routeService.js';
+import { MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './UserDashboard.css';
+
+const hashToIndex = (value, size) => {
+  if (!value || size <= 0) {
+    return 0;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash % size;
+};
+
+const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+  const toRad = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
+const createCitizenTruckIcon = () =>
+  L.divIcon({
+    className: 'citizen-route-truck-wrap',
+    html: '<div class="citizen-route-truck">🚛</div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 30],
+    popupAnchor: [0, -24],
+  });
+
+const createCitizenBinIcon = () =>
+  L.divIcon({
+    className: 'citizen-route-bin-wrap',
+    html: '<div class="citizen-route-bin">🗑️</div>',
+    iconSize: [32, 32],
+    iconAnchor: [16, 28],
+    popupAnchor: [0, -22],
+  });
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +59,7 @@ const UserDashboard = () => {
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [profile, setProfile] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '', address: '' });
+  const [liveRouteData, setLiveRouteData] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -43,6 +91,35 @@ const UserDashboard = () => {
     });
   }, [user]);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchLiveRoute = async () => {
+      try {
+        const snapshot = await routeService.getLogisticsLiveData('chennai');
+        if (!isCancelled) {
+          setLiveRouteData(snapshot);
+        }
+      } catch {
+        if (!isCancelled) {
+          setError('Unable to load your live route details right now.');
+        }
+      }
+    };
+
+    fetchLiveRoute();
+    const timerId = setInterval(fetchLiveRoute, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(timerId);
+    };
+  }, [user]);
+
   const firstName = useMemo(() => {
     if (!profile?.name) {
       return 'Citizen';
@@ -60,6 +137,80 @@ const UserDashboard = () => {
     }),
     []
   );
+
+  const assignedRoute = useMemo(() => {
+    const routes = liveRouteData?.routes || [];
+    if (!routes.length) {
+      return null;
+    }
+
+    const key = String(user?._id || user?.id || user?.email || 'citizen');
+    const routeIndex = hashToIndex(key, routes.length);
+    return routes[routeIndex] || routes[0];
+  }, [liveRouteData?.routes, user]);
+
+  const assignedTruck = useMemo(() => {
+    const trucks = liveRouteData?.trucks || [];
+    if (!assignedRoute) {
+      return null;
+    }
+
+    return trucks.find((truck) => truck.routeId === assignedRoute.routeId) || null;
+  }, [liveRouteData?.trucks, assignedRoute]);
+
+  const assignedBin = useMemo(() => {
+    const bins = liveRouteData?.bins || [];
+    if (!assignedRoute || !assignedRoute.binIds?.length || !bins.length) {
+      return null;
+    }
+
+    const routeBins = bins.filter((bin) => assignedRoute.binIds.includes(bin.binId));
+    if (!routeBins.length) {
+      return null;
+    }
+
+    const key = String(user?._id || user?.id || user?.email || 'citizen-bin');
+    const index = hashToIndex(key, routeBins.length);
+    return routeBins[index] || routeBins[0];
+  }, [liveRouteData?.bins, assignedRoute, user]);
+
+  const routeEta = useMemo(() => {
+    if (!assignedTruck?.currentLocation || !assignedBin?.location) {
+      return null;
+    }
+
+    const distanceKm = getDistanceKm(
+      assignedTruck.currentLocation.latitude,
+      assignedTruck.currentLocation.longitude,
+      assignedBin.location.latitude,
+      assignedBin.location.longitude
+    );
+
+    const speedKmh = Math.max(1, Number(assignedTruck.speedKmh) || 1);
+    const minutes = Math.ceil((distanceKm / speedKmh) * 60);
+    return {
+      distanceKm,
+      minutes: Math.max(1, minutes),
+    };
+  }, [assignedTruck, assignedBin]);
+
+  const routeMapCenter = useMemo(() => {
+    if (assignedTruck?.currentLocation) {
+      return [assignedTruck.currentLocation.latitude, assignedTruck.currentLocation.longitude];
+    }
+    if (assignedRoute?.path?.length) {
+      return [assignedRoute.path[0].latitude, assignedRoute.path[0].longitude];
+    }
+    return [13.0827, 80.2707];
+  }, [assignedTruck, assignedRoute]);
+
+  const assignedRouteLine = useMemo(() => {
+    if (!assignedRoute?.path?.length) {
+      return [];
+    }
+
+    return assignedRoute.path.map((point) => [point.latitude, point.longitude]);
+  }, [assignedRoute]);
 
   const activities = useMemo(
     () => [
@@ -219,22 +370,74 @@ const UserDashboard = () => {
             <div className="card status-card">
               <div className="status-header">
                 <h3>Route Status</h3>
-                <span className="status-badge">On Track</span>
+                <span className="status-badge">{assignedTruck?.status === 'paused' ? 'Paused' : 'On Track'}</span>
               </div>
               <div className="status-content">
-                <p className="vehicle-id">Collection Vehicle KA-01-EF-2024</p>
-                <p className="status-eta">ETA: 10:15 AM Today</p>
+                <p className="vehicle-id">Collection Vehicle {assignedTruck?.registrationNumber || 'Loading...'}</p>
+                <p className="status-eta">ETA: {routeEta ? `${routeEta.minutes} min` : 'Calculating...'}</p>
+              </div>
+              <div className="status-driver-panel">
+                <p><strong>Driver:</strong> {assignedTruck?.driverName || 'Not assigned'}</p>
+                <p><strong>Mobile:</strong> {assignedTruck?.driverContact || 'Not available'}</p>
+                <p><strong>Your Bin:</strong> {assignedBin?.binId || 'Not mapped yet'}</p>
               </div>
               <div className="progress-container">
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: '75%' }} />
+                  <div className="progress-fill" style={{ width: routeEta ? `${Math.max(8, Math.min(100, 100 - routeEta.distanceKm * 24))}%` : '16%' }} />
                 </div>
-                <p className="status-location">Currently at Block B, Sector 4 (800m away)</p>
+                <p className="status-location">
+                  {routeEta
+                    ? `Truck is ${routeEta.distanceKm.toFixed(2)} km away from your mapped bin.`
+                    : 'Fetching live location from your assigned route.'}
+                </p>
               </div>
             </div>
           </aside>
 
           <section className="main-column">
+            <div className="card citizen-route-card">
+              <h3 className="card-title">My Route Live Map</h3>
+              {assignedRoute && assignedTruck ? (
+                <>
+                  <p className="citizen-route-caption">
+                    Showing only your assigned route: {assignedRoute.routeName} ({assignedRoute.routeId})
+                  </p>
+                  <div className="citizen-route-map-wrap">
+                    <MapContainer center={routeMapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      {assignedRouteLine.length > 1 && (
+                        <Polyline positions={assignedRouteLine} pathOptions={{ color: '#0f7c21', weight: 6, opacity: 0.85 }} />
+                      )}
+                      <Marker
+                        position={[assignedTruck.currentLocation.latitude, assignedTruck.currentLocation.longitude]}
+                        icon={createCitizenTruckIcon()}
+                      >
+                        <Popup>
+                          <strong>{assignedTruck.registrationNumber}</strong><br />
+                          Driver: {assignedTruck.driverName}<br />
+                          Mobile: {assignedTruck.driverContact || 'Not available'}<br />
+                          ETA to your bin: {routeEta ? `${routeEta.minutes} min` : 'Calculating'}
+                        </Popup>
+                      </Marker>
+                      {assignedBin?.location && (
+                        <Marker position={[assignedBin.location.latitude, assignedBin.location.longitude]} icon={createCitizenBinIcon()}>
+                          <Popup>
+                            <strong>Your Bin:</strong> {assignedBin.binId}<br />
+                            Area: {assignedBin.address?.street || 'N/A'}
+                          </Popup>
+                        </Marker>
+                      )}
+                    </MapContainer>
+                  </div>
+                </>
+              ) : (
+                <p className="citizen-route-caption">Loading your assigned route and live truck details...</p>
+              )}
+            </div>
+
             <div className="metrics-grid">
               <div className="metric-card">
                 <p className="metric-label">Complaints</p>

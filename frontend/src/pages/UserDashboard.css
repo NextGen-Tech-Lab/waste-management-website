@@ -344,6 +344,18 @@
   margin-bottom: 1rem;
 }
 
+.status-driver-panel {
+  margin-bottom: 0.9rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.status-driver-panel p {
+  margin: 0.2rem 0;
+  font-size: 0.82rem;
+}
+
 .vehicle-id {
   margin: 0 0 0.25rem 0;
   font-size: 0.85rem;
@@ -513,6 +525,49 @@
 /* Impact Card */
 .impact-card {
   margin-top: 2rem;
+}
+
+.citizen-route-card {
+  margin-bottom: 1.2rem;
+}
+
+.citizen-route-caption {
+  margin: 0 0 0.8rem;
+  color: var(--on-surface-variant);
+  font-size: 0.9rem;
+}
+
+.citizen-route-map-wrap {
+  height: 330px;
+  border: 1px solid var(--surface-variant);
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+
+.citizen-route-truck {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #eaf8ec;
+  border: 2px solid #0f7c21;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.citizen-route-bin {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #edf8ef;
+  border: 2px solid #317a39;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 .impact-container {
@@ -774,6 +829,13 @@
   text-decoration: underline;
 }
 
+/* Keep leaflet overlays behind profile modal */
+.dashboard-container .leaflet-container,
+.dashboard-container .leaflet-pane,
+.dashboard-container .leaflet-control {
+  z-index: 1;
+}
+
 /* Modal Styles */
 .modal-backdrop {
   position: fixed;
@@ -783,7 +845,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 4000;
   padding: 1rem;
 }
 
@@ -795,7 +857,7 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  z-index: 101;
+  z-index: 4001;
   animation: modalSlideUp 0.3s ease-out;
 }
 
@@ -953,6 +1015,10 @@
     padding: 1.5rem;
   }
 
+  .citizen-route-map-wrap {
+    height: 280px;
+  }
+
   .welcome-hero h1 {
     font-size: 1.5rem;
   }
@@ -1012,5 +1078,9 @@
     padding: 0.75rem;
     gap: 0.5rem;
     font-size: 0.85rem;
+  }
+
+  .citizen-route-map-wrap {
+    height: 240px;
   }
 }

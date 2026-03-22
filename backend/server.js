@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import http from 'http';
 import connectDB from './config/database.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
-import { apiLimiter } from './src/middleware/rateLimiter.js';
 import { initializeSocket } from './src/socket/socketHandler.js';
 
 // Routes
@@ -27,8 +26,14 @@ await connectDB();
 
 // Middleware
 app.use(helmet());
+
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -44,9 +49,6 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.status(200).json({ message: 'Server is running', timestamp: new Date() });
 });
-
-// API Rate Limiter
-app.use('/api/', apiLimiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
