@@ -14,6 +14,21 @@ import BinsNearMe from './pages/BinsNearMe.jsx';
 import VehicleTracking from './pages/VehicleTracking.jsx';
 import ComplaintManagement from './pages/ComplaintManagement.jsx';
 import EducationCenter from './pages/EducationCenter.jsx';
+import Schemes from './pages/Schemes.jsx';
+import Impact from './pages/Impact.jsx';
+import Resources from './pages/Resources.jsx';
+import EducationalMaterials from './pages/EducationalMaterials.jsx';
+import PolicyDocuments from './pages/PolicyDocuments.jsx';
+import ToolsCalculators from './pages/ToolsCalculators.jsx';
+import CommunityResources from './pages/CommunityResources.jsx';
+
+// Calculator Pages
+import CarbonFootprintCalculator from './pages/CarbonFootprintCalculator.jsx';
+import RecyclingRateCalculator from './pages/RecyclingRateCalculator.jsx';
+import WasteTrackerCalculator from './pages/WasteTrackerCalculator.jsx';
+import CompostingCalculator from './pages/CompostingCalculator.jsx';
+import PlasticReductionCalculator from './pages/PlasticReductionCalculator.jsx';
+import WasteSegmentationAssistant from './pages/WasteSegmentationAssistant.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -263,6 +278,23 @@ export const AppContent = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* Public Information Pages */}
+          <Route path="/schemes" element={<Schemes />} />
+          <Route path="/impact" element={<Impact />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/resources/educational-materials" element={<EducationalMaterials />} />
+          <Route path="/resources/policy-documents" element={<PolicyDocuments />} />
+          <Route path="/resources/tools-calculators" element={<ToolsCalculators />} />
+          <Route path="/resources/community-resources" element={<CommunityResources />} />
+
+          {/* Calculator Routes */}
+          <Route path="/calculator/carbon-footprint" element={<CarbonFootprintCalculator />} />
+          <Route path="/calculator/waste-tracker" element={<WasteTrackerCalculator />} />
+          <Route path="/calculator/recycling-rate" element={<RecyclingRateCalculator />} />
+          <Route path="/calculator/composting" element={<CompostingCalculator />} />
+          <Route path="/calculator/plastic-reduction" element={<PlasticReductionCalculator />} />
+          <Route path="/calculator/waste-segregation" element={<WasteSegmentationAssistant />} />
 
           {/* Catch All */}
           <Route path="*" element={<Navigate to="/login" />} />

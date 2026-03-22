@@ -85,10 +85,10 @@ const Login = () => {
           </div>
         </div>
         <nav className="top-nav-links">
-          <a href="#">Schemes</a>
-          <a href="#">Impact</a>
-          <a href="#">Resources</a>
-          <button type="button">Sign Up</button>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/schemes'); }}>Schemes</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/impact'); }}>Impact</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/resources'); }}>Resources</a>
+          <button type="button" onClick={() => navigate('/register')}>Sign Up</button>
         </nav>
       </header>
 
