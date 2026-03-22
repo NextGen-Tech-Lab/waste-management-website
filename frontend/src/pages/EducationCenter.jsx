@@ -280,7 +280,15 @@ const EducationCenter = () => {
                 <Box sx={{ display: 'flex', gap: 4, mb: 3, fontSize: '0.9rem', color: '#666' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <span>⏱️</span>
-                    <span>{currentVideo.duration}<, pt: 2 }}>
+                    <span>{currentVideo.duration}</span>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>👁️</span>
+                    <span>{currentVideo.views.toLocaleString()} views</span>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, pt: 2 }}>
                   <Button
                     variant="outlined"
                     disabled={currentVideoIndex === 0}
@@ -305,16 +313,7 @@ const EducationCenter = () => {
                       fontWeight: 600,
                       padding: '8px 20px',
                       '&:hover': { boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)' },
-                   
-                    onClick={handlePrevVideo}
-                  >
-                    ← Previous Video
-                  </Button>700, mb: 3, color: '#1a1a1a', fontSize: '1.1rem'
-                  <Button
-                    variant="contained"
-                    disabled={currentVideoIndex === currentVideos.length - 1}
-                    onClick={handleNextVideo}
-                    sx={{ backgroundColor: selectedCategoryData?.color }}
+                    }}
                   >
                     Next Video →
                   </Button>
@@ -416,26 +415,9 @@ const EducationCenter = () => {
                             '&:hover': {
                               backgroundColor: 'rgba(0, 0, 0, 0.3)',
                             },
-                          }}.5 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            mb: 1.5,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            color: '#1a1a1a',
-                            fontSize: '0.9rem',
                           }}
                         >
-                          {video.title}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, fontSize: '0.8rem', color: '#999' }}>
-                          <span>👁️ {video.views.toLocaleString()
-                          }}
-                        >
-                          {video.duration}
+                          <PlayArrowIcon sx={{ fontSize: 50, color: 'white', opacity: 0.8 }} />
                         </Box>
                       </Box>
                       <CardContent sx={{ p: 2 }}>
@@ -452,7 +434,9 @@ const EducationCenter = () => {
                           {video.title}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, fontSize: '0.75rem', color: '#999' }}>
-                          <span>👁️ {video.views}</span>
+                          <span>⏱️ {video.duration}</span>
+                          <span>•</span>
+                          <span>👁️ {video.views.toLocaleString()}</span>
                         </Box>
                       </CardContent>
                     </Card>

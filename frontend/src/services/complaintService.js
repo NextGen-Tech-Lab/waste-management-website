@@ -22,6 +22,21 @@ export const complaintService = {
     return response.data;
   },
 
+  acceptComplaint: async (id, note = '') => {
+    const response = await apiClient.put(`/complaints/${id}/accept`, { note });
+    return response.data;
+  },
+
+  rejectComplaint: async (id, note = '') => {
+    const response = await apiClient.put(`/complaints/${id}/reject`, { note });
+    return response.data;
+  },
+
+  markComplaintFixed: async (id, note = '') => {
+    const response = await apiClient.put(`/complaints/${id}/fix`, { note });
+    return response.data;
+  },
+
   assignComplaint: async (id, assignedTo) => {
     const response = await apiClient.put(`/complaints/${id}/assign`, { assignedTo });
     return response.data;

@@ -50,20 +50,52 @@ const complaintSchema = new mongoose.Schema(
     attachments: [
       {
         url: String,
-        type: String, // 'image' or 'video'
+        type: {
+          type: String,
+          enum: ['image'],
+          default: 'image',
+        },
+        name: String,
+        size: Number,
         uploadedAt: Date,
       },
     ],
     status: {
       type: String,
-      enum: ['pending', 'acknowledged', 'in_progress', 'assigned', 'resolved', 'closed'],
+      enum: ['pending', 'accepted', 'rejected', 'fixed'],
       default: 'pending',
+    },
+    decisionReason: {
+      type: String,
+      required: false,
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,
     },
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ['pending', 'accepted', 'rejected', 'fixed'],
+          required: true,
+        },
+        changedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: false,
+        },
+        note: {
+          type: String,
+          required: false,
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     adminNotes: [
       {
         note: String,
@@ -80,6 +112,20 @@ const complaintSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+complaintSchema.pre('save', function addInitialHistory(next) {
+  if (this.isNew && (!this.statusHistory || this.statusHistory.length === 0)) {
+    this.statusHistory = [
+      {
+        status: this.status,
+        changedBy: this.userId,
+        note: 'Complaint submitted by user',
+        changedAt: new Date(),
+      },
+    ];
+  }
+  next();
+});
 
 const Complaint = mongoose.model('Complaint', complaintSchema);
 export default Complaint;

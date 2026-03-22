@@ -14,7 +14,16 @@ export const authenticate = (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    req.user = decoded;
+    const normalizedUserId = decoded.userId || decoded.id || decoded.user_id;
+
+    if (!normalizedUserId) {
+      return res.status(401).json({ message: 'Invalid token payload' });
+    }
+
+    req.user = {
+      ...decoded,
+      userId: normalizedUserId,
+    };
     next();
   } catch (error) {
     res.status(401).json({ message: 'Authentication failed', error: error.message });
