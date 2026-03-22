@@ -438,29 +438,6 @@ const UserDashboard = () => {
               )}
             </div>
 
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <p className="metric-label">Complaints</p>
-                <p className="metric-value">{stats.complaintsSubmitted}</p>
-                <p className="metric-sublabel">Total</p>
-              </div>
-              <div className="metric-card metric-card--alert">
-                <p className="metric-label">Open Issues</p>
-                <p className="metric-value">{stats.openComplaints}</p>
-                <p className="metric-sublabel">Action Req</p>
-              </div>
-              <div className="metric-card">
-                <p className="metric-label">Resolved</p>
-                <p className="metric-value">{stats.resolvedComplaints}</p>
-                <p className="metric-sublabel">Completed</p>
-              </div>
-              <div className="metric-card">
-                <p className="metric-label">Nearest Bin</p>
-                <p className="metric-value">{stats.nearestBinDistance}</p>
-                <p className="metric-sublabel">Distance</p>
-              </div>
-            </div>
-
             <div className="card">
               <h3 className="card-title">Quick Actions</h3>
               <div className="actions-grid">
@@ -484,6 +461,29 @@ const UserDashboard = () => {
                   <span className="action-label">Waste Education</span>
                   <span className="action-desc">Sorting and recycling guide</span>
                 </button>
+              </div>
+            </div>
+
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <p className="metric-label">Complaints</p>
+                <p className="metric-value">{stats.complaintsSubmitted}</p>
+                <p className="metric-sublabel">Total</p>
+              </div>
+              <div className="metric-card metric-card--alert">
+                <p className="metric-label">Open Issues</p>
+                <p className="metric-value">{stats.openComplaints}</p>
+                <p className="metric-sublabel">Action Req</p>
+              </div>
+              <div className="metric-card">
+                <p className="metric-label">Resolved</p>
+                <p className="metric-value">{stats.resolvedComplaints}</p>
+                <p className="metric-sublabel">Completed</p>
+              </div>
+              <div className="metric-card">
+                <p className="metric-label">Nearest Bin</p>
+                <p className="metric-value">{stats.nearestBinDistance}</p>
+                <p className="metric-sublabel">Distance</p>
               </div>
             </div>
 

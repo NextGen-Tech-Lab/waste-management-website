@@ -228,6 +228,10 @@ const EducationCenter = () => {
                   height: 0,
                   overflow: 'hidden',
                   borderRadius: 2,
+                  maxWidth: '950px',
+                  margin: '0 auto 32px auto',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
                 }}
               >
                 <Box
@@ -247,13 +251,13 @@ const EducationCenter = () => {
               </Paper>
 
               {/* Video Info */}
-              <Paper sx={{ p: 3, mb: 4, backgroundColor: '#f9f9f9' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+              <Paper sx={{ p: 4, mb: 4, backgroundColor: '#ffffff', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 3 }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#1a1a1a' }}>
                       {currentVideo.title}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#666' }}>
+                    <Typography variant="body1" sx={{ color: '#555', lineHeight: 1.6, fontSize: '0.95rem' }}>
                       {currentVideo.description}
                     </Typography>
                   </Box>
@@ -261,8 +265,11 @@ const EducationCenter = () => {
                     <IconButton
                       onClick={() => handleLike(currentVideo.id)}
                       sx={{
-                        color: likedVideos.has(currentVideo.id) ? 'red' : 'inherit',
+                        color: likedVideos.has(currentVideo.id) ? '#d32f2f' : '#999',
                         fontSize: 28,
+                        ml: 2,
+                        transition: 'all 0.3s ease',
+                        '&:hover': { color: '#d32f2f', transform: 'scale(1.1)' },
                       }}
                     >
                       {likedVideos.has(currentVideo.id) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
@@ -270,20 +277,39 @@ const EducationCenter = () => {
                   </Tooltip>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 3, mb: 2, fontSize: '0.875rem', color: '#999' }}>
-                  <span>⏱️ {currentVideo.duration}</span>
-                  <span>👁️ {currentVideo.views} views</span>
-                </Box>
-
-                {/* Navigation Buttons */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 4, mb: 3, fontSize: '0.9rem', color: '#666' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>⏱️</span>
+                    <span>{currentVideo.duration}<, pt: 2 }}>
                   <Button
                     variant="outlined"
                     disabled={currentVideoIndex === 0}
                     onClick={handlePrevVideo}
+                    sx={{
+                      borderRadius: 1,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      padding: '8px 20px',
+                    }}
                   >
                     ← Previous Video
                   </Button>
+                  <Button
+                    variant="contained"
+                    disabled={currentVideoIndex === currentVideos.length - 1}
+                    onClick={handleNextVideo}
+                    sx={{
+                      backgroundColor: selectedCategoryData?.color,
+                      borderRadius: 1,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      padding: '8px 20px',
+                      '&:hover': { boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)' },
+                   
+                    onClick={handlePrevVideo}
+                  >
+                    ← Previous Video
+                  </Button>700, mb: 3, color: '#1a1a1a', fontSize: '1.1rem'
                   <Button
                     variant="contained"
                     disabled={currentVideoIndex === currentVideos.length - 1}
@@ -352,41 +378,61 @@ const EducationCenter = () => {
                       sx={{
                         minWidth: 280,
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        border:
-                          index === currentVideoIndex
-                            ? `3px solid ${selectedCategoryData?.color}`
-                            : '1px solid #ddd',
-                        backgroundColor: index === currentVideoIndex ? '#f0f0f0' : '#fff',
+                        transition: 'all 0.3s ease 0.1s',
+                        border: index === currentVideoIndex ? `3px solid ${selectedCategoryData?.color}` : '1px solid #e0e0e0',
+                        backgroundColor: index === currentVideoIndex ? '#f5f5f5' : '#fff',
+                        boxShadow: index === currentVideoIndex ? '0 4px 16px rgba(0, 0, 0, 0.1)' : '0 2px 8px rgba(0, 0, 0, 0.06)',
                         '&:hover': {
-                          boxShadow: 3,
-                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                          transform: 'translateY(-6px)',
                         },
                       }}
                     >
                       <Box
                         sx={{
                           height: 160,
-                          backgroundColor: '#333',
+                          backgroundColor: '#2a2a2a',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 60,
+                          fontSize: 64,
                           position: 'relative',
+                          overflow: 'hidden',
                         }}
                       >
                         {video.thumbnail}
                         <Box
                           sx={{
                             position: 'absolute',
-                            bottom: 8,
-                            right: 8,
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                            color: 'white',
-                            padding: '2px 8px',
-                            borderRadius: 1,
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                            },
+                          }}.5 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            mb: 1.5,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            color: '#1a1a1a',
+                            fontSize: '0.9rem',
+                          }}
+                        >
+                          {video.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, fontSize: '0.8rem', color: '#999' }}>
+                          <span>👁️ {video.views.toLocaleString()
                           }}
                         >
                           {video.duration}

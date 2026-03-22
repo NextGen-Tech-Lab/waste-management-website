@@ -45,12 +45,12 @@
 
 /* Welcome Hero Section */
 .welcome-hero {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   border-radius: 0.75rem;
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   color: white;
-  padding: 3rem 2rem;
-  box-shadow: 0 8px 24px rgba(27, 94, 32, 0.2);
+  padding: 2rem 2rem;
+  box-shadow: 0 4px 16px rgba(14, 124, 59, 0.18);
   position: relative;
   overflow: hidden;
 }
@@ -59,24 +59,25 @@
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.05;
+  opacity: 0.03;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="currentColor"/></svg>');
   pointer-events: none;
 }
 
 .welcome-hero h1 {
-  font-size: 2.5rem;
+  font-size: 1.95rem;
   font-weight: 700;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.35rem 0;
   font-family: 'Public Sans', -apple-system, sans-serif;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .welcome-hero p {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   margin: 0;
   opacity: 0.95;
-  line-height: 1.5;
+  line-height: 1.6;
   font-weight: 400;
 }
 
@@ -807,13 +808,13 @@
 
 .btn-escalate {
   width: 100%;
-  background: var(--primary);
+  background: #D63384;
   color: white;
   border: none;
 }
 
 .btn-escalate:hover {
-  background: var(--primary-dark);
+  background: #A91E5A;
 }
 
 .btn-link {

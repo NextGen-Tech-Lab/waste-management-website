@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Typography, Button, Container, Menu, MenuItem } from '@mui/material';
+import PlaceIcon from '@mui/icons-material/Place';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import ErrorIcon from '@mui/icons-material/Error';
+import SchoolIcon from '@mui/icons-material/School';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { useAuth } from './utils/useAuth.js';
 
@@ -69,6 +73,7 @@ const NavBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [featuresAnchorEl, setFeaturesAnchorEl] = useState(null);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -76,6 +81,19 @@ const NavBar = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleFeaturesMenuOpen = (event) => {
+    setFeaturesAnchorEl(event.currentTarget);
+  };
+
+  const handleFeaturesMenuClose = () => {
+    setFeaturesAnchorEl(null);
+  };
+
+  const handleFeatureNavigate = (path) => {
+    navigate(path);
+    handleFeaturesMenuClose();
   };
 
   const handleLogout = () => {
@@ -101,12 +119,13 @@ const NavBar = () => {
   return (
     <AppBar
       position="sticky"
-      elevation={0}
+      elevation={1}
       sx={{
-        background: 'rgba(248, 250, 248, 0.92)',
+        background: 'linear-gradient(90deg, #0E7C3B 0%, #2E7D32 100%)',
         backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid #e1e3e1',
-        color: '#191c1b',
+        borderBottom: '1px solid rgba(0, 87, 61, 0.2)',
+        color: '#ffffff',
+        boxShadow: '0 2px 8px rgba(0, 87, 61, 0.15)',
       }}
     >
       <Toolbar sx={{ minHeight: '64px' }}>
@@ -119,7 +138,7 @@ const NavBar = () => {
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            color: '#00450d',
+            color: '#ffffff',
           }}
           onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}
         >
@@ -129,22 +148,91 @@ const NavBar = () => {
         {isAuthenticated && (
           <>
             {isAdmin && (
-              <Button sx={{ color: '#2f332f', fontWeight: 700 }} onClick={() => navigate('/admin/dashboard')}>
+              <Button sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }} onClick={() => navigate('/admin/dashboard')}>
                 Admin Dashboard
               </Button>
             )}
             <Button
-              sx={{ color: '#2f332f', fontWeight: 700 }}
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
               onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}
             >
               Dashboard
             </Button>
-            <Button sx={{ color: '#2f332f', fontWeight: 700 }} onClick={() => navigate('/education')}>
-              Education Center
-            </Button>
 
             <Button
-              sx={{ color: '#2f332f', fontWeight: 700, ml: 2 }}
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
+              onClick={handleFeaturesMenuOpen}
+            >
+              Features ▼
+            </Button>
+            <Menu
+              anchorEl={featuresAnchorEl}
+              open={Boolean(featuresAnchorEl)}
+              onClose={handleFeaturesMenuClose}
+              MenuListProps={{
+                onMouseLeave: handleFeaturesMenuClose,
+              }}
+            >
+              <MenuItem
+                onClick={() => handleFeatureNavigate('/user/bins')}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+              >
+                <PlaceIcon sx={{ fontSize: 20, color: '#ff6b6b' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Locate Bins
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
+                    Find nearby disposal points
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleFeatureNavigate('/user/tracking')}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+              >
+                <LocalShippingIcon sx={{ fontSize: 20, color: '#4dabf7' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Track Vehicle
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
+                    Live garbage truck route
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleFeatureNavigate('/user/complaints')}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+              >
+                <ErrorIcon sx={{ fontSize: 20, color: '#ff922b' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Lodge Complaint
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
+                    Report littering or spills
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleFeatureNavigate('/education')}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+              >
+                <SchoolIcon sx={{ fontSize: 20, color: '#51cf66' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Waste Education
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
+                    Sorting and recycling guide
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </Menu>
+
+            <Button
+              sx={{ color: '#ffffff', fontWeight: 700, ml: 2, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
               onClick={handleMenuOpen}
             >
               {user?.name} ▼
