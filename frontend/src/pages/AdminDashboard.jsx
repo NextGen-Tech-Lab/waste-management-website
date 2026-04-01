@@ -251,12 +251,9 @@ const AdminDashboard = () => {
           <button type="button" className="admin-nav-link" onClick={() => navigate('/admin/complaints')}>
             Compliance
           </button>
-          <button type="button" className="admin-nav-link">Reports</button>
         </nav>
 
         <div className="admin-nav-actions">
-          <button type="button" className="admin-icon-btn" aria-label="Notifications">N</button>
-          <button type="button" className="admin-icon-btn" aria-label="Settings">S</button>
           <button type="button" className="admin-logout-btn" onClick={handleAdminLogout}>Logout</button>
           <button type="button" className="admin-avatar" aria-label="Admin profile">A</button>
         </div>
