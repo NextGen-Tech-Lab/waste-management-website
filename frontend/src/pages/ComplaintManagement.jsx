@@ -401,6 +401,20 @@ const ComplaintManagement = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate('/admin/dashboard')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 500,
+                color: '#666',
+              }}
+            >
+              Education
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/admin/complaints')}
               style={{
                 background: 'none',
@@ -415,38 +429,9 @@ const ComplaintManagement = () => {
             >
               Compliance
             </button>
-            <button
-              type="button"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 500,
-                color: '#666',
-              }}
-            >
-              Reports
-            </button>
           </nav>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button type="button" style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#666',
-              padding: '8px 12px',
-            }}>N</button>
-            <button type="button" style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#666',
-              padding: '8px 12px',
-            }}>S</button>
             <button type="button" onClick={handleAdminLogout} style={{
               background: 'none',
               border: 'none',
