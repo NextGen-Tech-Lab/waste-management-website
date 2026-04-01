@@ -119,23 +119,33 @@ export const createComplaint = async (req, res) => {
 
 export const getComplaints = async (req, res) => {
   try {
+    console.log('getComplaints called - req.user:', req.user);
     const { status, category, userId, severity } = req.query;
     let query = {};
 
     // Regular users can only see their own complaints
-    if (req.user.role === 'user') {
+    if (req.user && req.user.role === 'user') {
       query.userId = req.user.userId;
     }
 
     if (status) query.status = status;
     if (category) query.category = category;
     if (severity) query.severity = severity;
-    if (userId && req.user.role === 'admin') query.userId = userId;
+    if (userId && req.user && req.user.role === 'admin') query.userId = userId;
 
-    const complaints = await withPopulatedRelations(Complaint.find(query)).sort({ createdAt: -1 });
+    console.log('Query:', query);
+    const complaints = await Complaint.find(query)
+      .populate('userId', 'name email phone')
+      .populate('assignedTo', 'name email')
+      .populate('statusHistory.changedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    console.log('Fetched complaints count:', complaints.length);
 
     res.status(200).json(complaints);
   } catch (error) {
+    console.error('Error in getComplaints:', error);
     res.status(500).json({ message: 'Failed to fetch complaints', error: error.message });
   }
 };

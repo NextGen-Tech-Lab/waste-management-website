@@ -111,7 +111,9 @@ const ComplaintManagement = () => {
       const data = await complaintService.getComplaints();
       setComplaints(data);
     } catch (error) {
-      setMessage('Failed to fetch complaints. Please try again.');
+      console.error('Error fetching complaints:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch complaints. Please try again.';
+      setMessage(errorMessage);
       setMessageType('error');
     }
   };
