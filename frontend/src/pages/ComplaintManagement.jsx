@@ -358,100 +358,40 @@ const ComplaintManagement = () => {
 
   if (isAdminRoute) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          background: '#ffffff',
-          borderBottom: '1px solid #e0e0e0',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-        }}>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#1b5e20' }}>EcoManage Admin</div>
+      <div className="admin-dashboard">
+        <header className="admin-topnav">
+          <div className="admin-brand">EcoManage Admin</div>
 
-          <nav style={{ display: 'flex', gap: '32px' }}>
+          <nav className="admin-nav-links">
             <button
               type="button"
+              className="admin-nav-link"
               onClick={() => navigate('/admin/dashboard')}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 500,
-                color: '#666',
-              }}
             >
               Analytics
             </button>
             <button
               type="button"
+              className="admin-nav-link"
               onClick={() => navigate('/admin/dashboard')}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 500,
-                color: '#666',
-              }}
             >
               Logistics
             </button>
             <button
               type="button"
+              className="admin-nav-link"
               onClick={() => navigate('/admin/dashboard')}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 500,
-                color: '#666',
-              }}
             >
               Education
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/complaints')}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#1b5e20',
-                borderBottom: '3px solid #1b5e20',
-                paddingBottom: '4px',
-              }}
-            >
+            <button type="button" className="admin-nav-link admin-nav-link--active" onClick={() => navigate('/admin/complaints')}>
               Compliance
             </button>
           </nav>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button type="button" onClick={handleAdminLogout} style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#d32f2f',
-              padding: '8px 12px',
-            }}>Logout</button>
-            <button type="button" style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: '#f0f0f0',
-              color: '#666',
-            }}>A</button>
+          <div className="admin-nav-actions">
+            <button type="button" className="admin-logout-btn" onClick={handleAdminLogout}>Logout</button>
+            <button type="button" className="admin-avatar" aria-label="Admin profile">A</button>
           </div>
         </header>
 
