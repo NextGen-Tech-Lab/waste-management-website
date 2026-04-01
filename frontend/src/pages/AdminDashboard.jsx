@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/useAuth.js';
 import routeService from '../services/routeService.js';
+import AdminEducationManagement from '../components/AdminEducationManagement.jsx';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -240,6 +241,13 @@ const AdminDashboard = () => {
           >
             Logistics
           </button>
+          <button
+            type="button"
+            className={`admin-nav-link ${activePanel === 'education' ? 'admin-nav-link--active' : ''}`}
+            onClick={() => setActivePanel('education')}
+          >
+            Education
+          </button>
           <button type="button" className="admin-nav-link" onClick={() => navigate('/admin/complaints')}>
             Compliance
           </button>
@@ -261,10 +269,16 @@ const AdminDashboard = () => {
             <h1>
               {activePanel === 'logistics'
                 ? `Namaste, ${adminName}. Chennai live map is backend-driven.`
+                : activePanel === 'education'
+                ? `Namaste, ${adminName}. Manage educational content here.`
                 : `Namaste, ${adminName}. Chennai control dashboard is in sync.`}
             </h1>
             <p className="admin-hero-text">
-              Four closed-loop routes share one waste transfer facility, with one truck per route and continuous live updates.
+              {activePanel === 'education'
+                ? 'Upload YouTube videos to help users learn waste management practices.'
+                : activePanel === 'logistics'
+                ? 'Four closed-loop routes share one waste transfer facility, with one truck per route and continuous live updates.'
+                : 'Manage logistics, education, and system health in real-time.'}
             </p>
           </div>
           <div className="admin-hero-glow" />
@@ -307,7 +321,9 @@ const AdminDashboard = () => {
           </article>
         </section>
 
-        {activePanel === 'analytics' ? (
+        {activePanel === 'education' ? (
+          <AdminEducationManagement />
+        ) : activePanel === 'analytics' ? (
           <section className="admin-main-grid">
             <div className="admin-activity-col">
               <div className="admin-section-head">

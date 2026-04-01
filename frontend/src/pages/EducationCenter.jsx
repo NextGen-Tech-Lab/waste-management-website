@@ -21,42 +21,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import educationService from '../services/educationService.js';
 
-// Mock video data for different categories
-const mockVideosByCategory = {
-  waste_segregation: [
-    { id: 'ws1', title: 'How to Segregate Waste at Home', duration: '12:30', thumbnail: '📋', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2500, description: 'Learn the proper way to segregate wet and dry waste at your home.' },
-    { id: 'ws2', title: 'Wet Waste vs Dry Waste Explained', duration: '8:45', thumbnail: '♻️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1800, description: 'Understand the differences between wet and dry waste.' },
-    { id: 'ws3', title: 'Common Segregation Mistakes', duration: '6:20', thumbnail: '⚠️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1200, description: 'Avoid these common mistakes when segregating waste.' },
-    { id: 'ws4', title: 'Medical Waste Management', duration: '10:15', thumbnail: '🏥', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 950, description: 'How to manage medical and hazardous waste safely.' },
-  ],
-  recycling: [
-    { id: 'rc1', title: 'Introduction to Recycling', duration: '14:50', thumbnail: '♻️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 3200, description: 'Understand the basics of recycling and its importance.' },
-    { id: 'rc2', title: 'Recycling Plastics - Do\'s and Don\'ts', duration: '9:30', thumbnail: '🔄', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2100, description: 'Learn which plastics can be recycled and how.' },
-    { id: 'rc3', title: 'E-Waste Recycling Guide', duration: '11:20', thumbnail: '📱', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1650, description: 'Proper disposal and recycling of electronic waste.' },
-    { id: 'rc4', title: 'Paper and Cardboard Recycling', duration: '7:45', thumbnail: '📰', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1400, description: 'How to recycle paper and cardboard products.' },
-    { id: 'rc5', title: 'Metal Recycling Process', duration: '13:10', thumbnail: '⚙️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1100, description: 'Understanding metal recycling and collection.' },
-  ],
-  composting: [
-    { id: 'cm1', title: 'Home Composting Basics', duration: '15:40', thumbnail: '🌱', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2800, description: 'Start composting at home with these simple steps.' },
-    { id: 'cm2', title: 'Building Your Compost Bin', duration: '12:20', thumbnail: '📦', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1900, description: 'DIY guide to building an effective compost bin.' },
-    { id: 'cm3', title: 'Composting Kitchen Waste', duration: '8:50', thumbnail: '🍴', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1600, description: 'Compost your kitchen scraps effectively.' },
-    { id: 'cm4', title: 'Troubleshooting Compost Problems', duration: '10:05', thumbnail: '🔧', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 980, description: 'Solutions to common composting issues.' },
-  ],
-  environmental_impact: [
-    { id: 'ei1', title: 'Impact of Plastic on Environment', duration: '16:30', thumbnail: '🌍', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 3500, description: 'How plastic waste affects our environment.' },
-    { id: 'ei2', title: 'Climate Change and Waste', duration: '13:45', thumbnail: '🌡️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2200, description: 'The connection between waste management and climate.' },
-    { id: 'ei3', title: 'Ocean Pollution Crisis', duration: '11:30', thumbnail: '🌊', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2900, description: 'Understanding ocean pollution from plastic waste.' },
-    { id: 'ei4', title: 'Solutions for a Cleaner Future', duration: '14:20', thumbnail: '✨', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1700, description: 'Innovative solutions to reduce environmental waste impact.' },
-  ],
-  general_tips: [
-    { id: 'gt1', title: 'Zero Waste Living Guide', duration: '18:15', thumbnail: '0️⃣', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 2600, description: 'How to reduce waste and live sustainably.' },
-    { id: 'gt2', title: 'Shopping Smart to Reduce Waste', duration: '9:40', thumbnail: '🛍️', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1450, description: 'Make sustainable shopping choices.' },
-    { id: 'gt3', title: 'Reusing Items Creatively', duration: '10:25', thumbnail: '🎨', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', views: 1800, description: 'Creative ways to reuse everyday items.' },
-  ],
-};
-
 const EducationCenter = () => {
-  const [content, setContent] = useState([]);
+  const [allVideos, setAllVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -77,8 +43,8 @@ const EducationCenter = () => {
 
   const fetchContent = async () => {
     try {
-      const data = await educationService.getContent({ published: 'true' });
-      setContent(data);
+      const data = await educationService.getContent({ contentType: 'video', published: 'true' });
+      setAllVideos(data);
     } catch (error) {
       console.error('Failed to fetch content:', error);
     } finally {
@@ -87,7 +53,7 @@ const EducationCenter = () => {
   };
 
   const getCategoryVideos = (categoryId) => {
-    return mockVideosByCategory[categoryId] || [];
+    return allVideos.filter(video => video.category === categoryId);
   };
 
   const currentVideos = selectedCategory ? getCategoryVideos(selectedCategory) : [];
@@ -236,7 +202,7 @@ const EducationCenter = () => {
               >
                 <Box
                   component="iframe"
-                  src={currentVideo.url}
+                  src={currentVideo.videoURL}
                   sx={{
                     position: 'absolute',
                     top: 0,
@@ -261,30 +227,26 @@ const EducationCenter = () => {
                       {currentVideo.description}
                     </Typography>
                   </Box>
-                  <Tooltip title={likedVideos.has(currentVideo.id) ? 'Unlike' : 'Like'}>
+                  <Tooltip title={likedVideos.has(currentVideo._id) ? 'Unlike' : 'Like'}>
                     <IconButton
-                      onClick={() => handleLike(currentVideo.id)}
+                      onClick={() => handleLike(currentVideo._id)}
                       sx={{
-                        color: likedVideos.has(currentVideo.id) ? '#d32f2f' : '#999',
+                        color: likedVideos.has(currentVideo._id) ? '#d32f2f' : '#999',
                         fontSize: 28,
                         ml: 2,
                         transition: 'all 0.3s ease',
                         '&:hover': { color: '#d32f2f', transform: 'scale(1.1)' },
                       }}
                     >
-                      {likedVideos.has(currentVideo.id) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                      {likedVideos.has(currentVideo._id) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                     </IconButton>
                   </Tooltip>
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 4, mb: 3, fontSize: '0.9rem', color: '#666' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>⏱️</span>
-                    <span>{currentVideo.duration}</span>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <span>👁️</span>
-                    <span>{currentVideo.views.toLocaleString()} views</span>
+                    <span>{(currentVideo.views || 0).toLocaleString()} views</span>
                   </Box>
                 </Box>
 
@@ -372,7 +334,7 @@ const EducationCenter = () => {
                 >
                   {currentVideos.map((video, index) => (
                     <Card
-                      key={video.id}
+                      key={video._id}
                       onClick={() => handleVideoClick(index)}
                       sx={{
                         minWidth: 280,
@@ -397,9 +359,11 @@ const EducationCenter = () => {
                           fontSize: 64,
                           position: 'relative',
                           overflow: 'hidden',
+                          backgroundImage: video.thumbnail ? `url(${video.thumbnail})` : 'none',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                         }}
                       >
-                        {video.thumbnail}
                         <Box
                           sx={{
                             position: 'absolute',
@@ -407,17 +371,17 @@ const EducationCenter = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            backgroundColor: 'rgba(0, 0, 0, 0)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             transition: 'all 0.3s ease',
                             '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                              backgroundColor: 'rgba(0, 0, 0, 0.5)',
                             },
                           }}
                         >
-                          <PlayArrowIcon sx={{ fontSize: 50, color: 'white', opacity: 0.8 }} />
+                          <PlayArrowIcon sx={{ fontSize: 50, color: 'white' }} />
                         </Box>
                       </Box>
                       <CardContent sx={{ p: 2 }}>
@@ -434,9 +398,7 @@ const EducationCenter = () => {
                           {video.title}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, fontSize: '0.75rem', color: '#999' }}>
-                          <span>⏱️ {video.duration}</span>
-                          <span>•</span>
-                          <span>👁️ {video.views.toLocaleString()}</span>
+                          <span>👁️ {(video.views || 0).toLocaleString()}</span>
                         </Box>
                       </CardContent>
                     </Card>
