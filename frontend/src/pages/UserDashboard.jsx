@@ -503,41 +503,6 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            <div className="card">
-              <h3 className="card-title">Tools & Calculators</h3>
-              <div className="tools-grid">
-                <button className="action-card" onClick={() => handleNavigate('/calculator/carbon-footprint')}>
-                  <span className="action-icon">🌱</span>
-                  <span className="action-label">Carbon Footprint</span>
-                  <span className="action-desc">Calculate your emissions</span>
-                </button>
-                <button className="action-card" onClick={() => handleNavigate('/calculator/waste-tracker')}>
-                  <span className="action-icon">📊</span>
-                  <span className="action-label">Waste Tracker</span>
-                  <span className="action-desc">Monitor waste production</span>
-                </button>
-                <button className="action-card" onClick={() => handleNavigate('/calculator/recycling-rate')}>
-                  <span className="action-icon">♻️</span>
-                  <span className="action-label">Recycling Rate</span>
-                  <span className="action-desc">Track recycling progress</span>
-                </button>
-                <button className="action-card" onClick={() => handleNavigate('/calculator/composting')}>
-                  <span className="action-icon">🌾</span>
-                  <span className="action-label">Composting</span>
-                  <span className="action-desc">Estimate compost yield</span>
-                </button>
-                <button className="action-card" onClick={() => handleNavigate('/calculator/plastic-reduction')}>
-                  <span className="action-icon">🛑</span>
-                  <span className="action-label">Plastic Reduction</span>
-                  <span className="action-desc">Reduce plastic usage</span>
-                </button>
-                <button className="action-card" onClick={() => handleNavigate('/calculator/waste-segregation')}>
-                  <span className="action-icon">🗑️</span>
-                  <span className="action-label">Waste Segregation</span>
-                  <span className="action-desc">Learn proper sorting</span>
-                </button>
-              </div>
-            </div>
           </section>
 
           <aside className="right-column">
