@@ -265,10 +265,10 @@ const AdminDashboard = () => {
             <p className="admin-hero-label">Live Operations</p>
             <h1>
               {activePanel === 'logistics'
-                ? `Namaste, ${adminName}. Chennai live map is backend-driven.`
+                ? `Hello, ${adminName}. Chennai live map is backend-driven.`
                 : activePanel === 'education'
-                ? `Namaste, ${adminName}. Manage educational content here.`
-                : `Namaste, ${adminName}. Chennai control dashboard is in sync.`}
+                ? `Hello, ${adminName}. Manage educational content here.`
+                : `Hello, ${adminName}. Chennai control dashboard is in sync.`}
             </h1>
             <p className="admin-hero-text">
               {activePanel === 'education'

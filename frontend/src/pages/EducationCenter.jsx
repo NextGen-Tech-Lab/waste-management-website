@@ -21,6 +21,112 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import educationService from '../services/educationService.js';
 
+const FALLBACK_CATEGORY_VIDEOS = {
+  waste_segregation: [
+    {
+      _id: 'fallback-waste-segregation-1',
+      category: 'waste_segregation',
+      title: 'Waste Segregation at Home | Dry and Wet Waste Basics',
+      description: 'Simple practical guide to separate dry and wet waste correctly at home.',
+      videoURL: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+      thumbnail: 'https://img.youtube.com/vi/M7lc1UVf-VE/hqdefault.jpg',
+      views: 0,
+    },
+  ],
+  recycling: [
+    {
+      _id: 'fallback-recycling-1',
+      category: 'recycling',
+      title: 'The Recycling Process Explained',
+      description: 'Understand what can be recycled and how recycling works end-to-end.',
+      videoURL: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+      views: 0,
+    },
+  ],
+  composting: [
+    {
+      _id: 'fallback-composting-1',
+      category: 'composting',
+      title: 'Home Composting for Beginners',
+      description: 'Step-by-step composting setup for kitchen and garden waste.',
+      videoURL: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+      thumbnail: 'https://img.youtube.com/vi/aqz-KE-bpKQ/hqdefault.jpg',
+      views: 0,
+    },
+  ],
+  environmental_impact: [
+    {
+      _id: 'fallback-environment-impact-1',
+      category: 'environmental_impact',
+      title: 'How Waste Impacts the Environment',
+      description: 'Learn how poor waste handling affects air, land, water, and climate.',
+      videoURL: 'https://www.youtube.com/watch?v=ysz5S6PUM-U',
+      thumbnail: 'https://img.youtube.com/vi/ysz5S6PUM-U/hqdefault.jpg',
+      views: 0,
+    },
+  ],
+  general_tips: [
+    {
+      _id: 'fallback-general-tips-1',
+      category: 'general_tips',
+      title: 'Zero Waste Lifestyle Tips for Daily Life',
+      description: 'Actionable tips to reduce waste and build sustainable habits every day.',
+      videoURL: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+      thumbnail: 'https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg',
+      views: 0,
+    },
+  ],
+};
+
+const getYouTubeVideoId = (rawUrl = '') => {
+  if (!rawUrl) {
+    return '';
+  }
+
+  try {
+    const url = new URL(rawUrl);
+
+    if (url.hostname.includes('youtu.be')) {
+      return url.pathname.replace('/', '').trim();
+    }
+
+    if (url.pathname.includes('/embed/')) {
+      return url.pathname.split('/embed/')[1]?.split('/')[0] || '';
+    }
+
+    if (url.searchParams.has('v')) {
+      return url.searchParams.get('v') || '';
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+};
+
+const toEmbedUrl = (rawUrl = '') => {
+  const videoId = getYouTubeVideoId(rawUrl);
+  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : rawUrl;
+};
+
+const toWatchUrl = (rawUrl = '') => {
+  const videoId = getYouTubeVideoId(rawUrl);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : rawUrl;
+};
+
+const normalizeVideo = (video) => {
+  const embedURL = toEmbedUrl(video?.videoURL);
+  const watchURL = toWatchUrl(video?.videoURL);
+
+  return {
+    ...video,
+    embedURL,
+    watchURL,
+    videoURL: embedURL,
+  };
+};
+
 const EducationCenter = () => {
   const [allVideos, setAllVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +150,12 @@ const EducationCenter = () => {
   const fetchContent = async () => {
     try {
       const data = await educationService.getContent({ contentType: 'video', published: 'true' });
-      setAllVideos(data);
+      const content = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.content)
+        ? data.content
+        : [];
+      setAllVideos(content.map(normalizeVideo));
     } catch (error) {
       console.error('Failed to fetch content:', error);
     } finally {
@@ -53,7 +164,12 @@ const EducationCenter = () => {
   };
 
   const getCategoryVideos = (categoryId) => {
-    return allVideos.filter(video => video.category === categoryId);
+    const apiVideos = allVideos.filter((video) => video.category === categoryId);
+    if (apiVideos.length > 0) {
+      return apiVideos;
+    }
+
+    return (FALLBACK_CATEGORY_VIDEOS[categoryId] || []).map(normalizeVideo);
   };
 
   const currentVideos = selectedCategory ? getCategoryVideos(selectedCategory) : [];
@@ -202,7 +318,7 @@ const EducationCenter = () => {
               >
                 <Box
                   component="iframe"
-                  src={currentVideo.videoURL}
+                  src={currentVideo.embedURL || currentVideo.videoURL}
                   sx={{
                     position: 'absolute',
                     top: 0,
@@ -251,6 +367,19 @@ const EducationCenter = () => {
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 2, pt: 2 }}>
+                  <Button
+                    variant="text"
+                    component="a"
+                    href={currentVideo.watchURL || currentVideo.videoURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Watch on YouTube
+                  </Button>
                   <Button
                     variant="outlined"
                     disabled={currentVideoIndex === 0}

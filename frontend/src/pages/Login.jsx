@@ -140,7 +140,7 @@ const Login = () => {
                   type="email"
                   value={citizenData.email}
                   onChange={handleCitizenChange}
-                  placeholder="user@example.com"
+                  placeholder="arjun.krishnan@ecocity.in"
                   required
                 />
               </div>
@@ -158,7 +158,7 @@ const Login = () => {
               </div>
 
               <div className="inline-action-row">
-                <span className="register-link muted">Demo citizen login: user@example.com / 123456</span>
+                <span className="register-link muted">Demo citizen login: arjun.krishnan@ecocity.in / 123456</span>
               </div>
 
               {loginError && <div className="error-box">{loginError}</div>}
@@ -193,7 +193,7 @@ const Login = () => {
                   type="email"
                   value={adminData.email}
                   onChange={handleAdminChange}
-                  placeholder="admin@example.com"
+                  placeholder="meera.iyer@ecocity.in"
                   required
                 />
               </div>
@@ -221,7 +221,7 @@ const Login = () => {
 
               <div className="inline-action-row">
                 <a className="register-link muted" href="#" onClick={(e) => e.preventDefault()}>
-                  Forgot security credentials?
+                  Demo admin login: meera.iyer@ecocity.in / 123456
                 </a>
               </div>
             </form>

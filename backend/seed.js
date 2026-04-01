@@ -15,74 +15,78 @@ const seedDatabase = async () => {
     console.log('✓ Connected to MongoDB');
 
     // Upsert admin with known credentials.
-    let admin = await User.findOne({ email: 'admin@example.com' }).select('+password');
+    let admin = await User.findOne({ email: 'meera.iyer@ecocity.in' }).select('+password');
     if (!admin) {
       admin = new User({
         userId: uuidv4(),
-        name: 'Admin User',
-        email: 'admin@example.com',
+        name: 'Meera Iyer',
+        email: 'meera.iyer@ecocity.in',
         password: '123456',
-        phone: '+1234567890',
+        phone: '+91 9840012345',
         address: {
-          street: 'Admin Building',
+          street: 'Ripon Building, Periamet',
           city: 'Chennai',
           state: 'Tamil Nadu',
           zipcode: '600001',
+          country: 'India',
         },
         role: 'admin',
       });
     } else {
-      admin.name = 'Admin User';
+      admin.name = 'Meera Iyer';
       admin.password = '123456';
-      admin.phone = '+1234567890';
+      admin.phone = '+91 9840012345';
       admin.address = {
-        street: 'Admin Building',
+        street: 'Ripon Building, Periamet',
         city: 'Chennai',
         state: 'Tamil Nadu',
         zipcode: '600001',
+        country: 'India',
       };
       admin.role = 'admin';
     }
 
     await admin.save();
     console.log('✓ Admin user created successfully');
-    console.log('  Email: admin@example.com');
+    console.log('  Email: meera.iyer@ecocity.in');
     console.log('  Password: 123456');
     console.log('  Role: admin');
 
     // Upsert sample regular user with known credentials.
-    let user = await User.findOne({ email: 'user@example.com' }).select('+password');
+    let user = await User.findOne({ email: 'arjun.krishnan@ecocity.in' }).select('+password');
     if (!user) {
       user = new User({
         userId: uuidv4(),
-        name: 'Demo User',
-        email: 'user@example.com',
+        name: 'Arjun Krishnan',
+        email: 'arjun.krishnan@ecocity.in',
         password: '123456',
-        phone: '+1234567891',
+        phone: '+91 9876543210',
         address: {
-          street: 'Ward 21',
+          street: 'No. 18, Luz Church Road, Mylapore',
           city: 'Chennai',
           state: 'Tamil Nadu',
-          zipcode: '600002',
+          zipcode: '600004',
+          country: 'India',
         },
         role: 'user',
       });
     } else {
-      user.name = 'Demo User';
+      user.name = 'Arjun Krishnan';
       user.password = '123456';
-      user.phone = '+1234567891';
+      user.phone = '+91 9876543210';
       user.address = {
-        street: 'Ward 21',
+        street: 'No. 18, Luz Church Road, Mylapore',
         city: 'Chennai',
         state: 'Tamil Nadu',
-        zipcode: '600002',
+        zipcode: '600004',
+        country: 'India',
       };
       user.role = 'user';
     }
 
     await user.save();
     console.log('\n✓ Demo user created successfully');
-    console.log('  Email: user@example.com');
+    console.log('  Email: arjun.krishnan@ecocity.in');
     console.log('  Password: 123456');
     console.log('  Role: user');
 

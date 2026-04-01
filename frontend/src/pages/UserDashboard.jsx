@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/useAuth';
 import routeService from '../services/routeService.js';
+import complaintService from '../services/complaintService.js';
 import { MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -50,6 +51,34 @@ const createCitizenBinIcon = () =>
     popupAnchor: [0, -22],
   });
 
+const formatTimeAgo = (value) => {
+  if (!value) {
+    return 'Just now';
+  }
+
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) {
+    return 'Just now';
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  if (minutes < 1) {
+    return 'Just now';
+  }
+  if (minutes < 60) {
+    return `${minutes} min ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+};
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -60,6 +89,7 @@ const UserDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '', address: '' });
   const [liveRouteData, setLiveRouteData] = useState(null);
+  const [complaints, setComplaints] = useState([]);
 
   useEffect(() => {
     if (!user) {
@@ -89,6 +119,39 @@ const UserDashboard = () => {
       phone: hydratedProfile.phone,
       address: hydratedProfile.address,
     });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchComplaints = async () => {
+      try {
+        const response = await complaintService.getComplaints();
+        const complaintList = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.complaints)
+          ? response.complaints
+          : [];
+
+        if (!isCancelled) {
+          setComplaints(complaintList);
+        }
+      } catch {
+        if (!isCancelled) {
+          setComplaints([]);
+        }
+      }
+    };
+
+    fetchComplaints();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -130,12 +193,12 @@ const UserDashboard = () => {
   const stats = useMemo(
     () => ({
       wasteCollected: '142kg',
-      complaintsSubmitted: 12,
-      openComplaints: 2,
-      resolvedComplaints: 10,
+      complaintsSubmitted: complaints.length,
+      openComplaints: complaints.filter((complaint) => ['pending', 'accepted'].includes(complaint?.status)).length,
+      resolvedComplaints: complaints.filter((complaint) => complaint?.status === 'fixed').length,
       nearestBinDistance: '120m',
     }),
-    []
+    [complaints]
   );
 
   const assignedRoute = useMemo(() => {
@@ -213,30 +276,21 @@ const UserDashboard = () => {
   }, [assignedRoute]);
 
   const activities = useMemo(
-    () => [
-      {
-        id: 'a1',
-        status: 'success',
-        title: 'Complaint Resolved',
-        desc: 'Issue #8812 - Street cleaning completed.',
-        time: '2 hours ago',
-      },
-      {
-        id: 'a2',
-        status: 'info',
-        title: 'Pickup Scheduled',
-        desc: 'Bulk waste pickup confirmed for Saturday.',
-        time: 'Yesterday',
-      },
-      {
-        id: 'a3',
-        status: 'reward',
-        title: 'Earned Points',
-        desc: '50 Eco-Points added for correct segregation.',
-        time: '2 days ago',
-      },
-    ],
-    []
+    () =>
+      complaints.slice(0, 5).map((complaint) => {
+        const isResolved = complaint?.status === 'fixed';
+        const isOpen = ['pending', 'accepted'].includes(complaint?.status);
+        const activityStatus = isResolved ? 'success' : isOpen ? 'info' : 'reward';
+
+        return {
+          id: complaint?._id || complaint?.complaintId,
+          status: activityStatus,
+          title: isResolved ? 'Complaint Resolved' : isOpen ? 'Complaint In Progress' : 'Complaint Updated',
+          desc: `${complaint?.subject || 'Complaint'}${complaint?.category ? ` (${complaint.category.replace('_', ' ')})` : ''}`,
+          time: formatTimeAgo(complaint?.updatedAt || complaint?.createdAt),
+        };
+      }),
+    [complaints]
   );
 
   const handleNavigate = (path) => {
@@ -303,7 +357,7 @@ const UserDashboard = () => {
     <main className="dashboard-container">
       <section className="welcome-hero">
         <div className="dashboard-content">
-          <h1>Namaste, {firstName}!</h1>
+          <h1>Hello, {firstName}!</h1>
           <p>
             Your contribution to a cleaner India matters. You&apos;ve helped divert <strong>{stats.wasteCollected}</strong>{' '}
             of waste from landfills this month.
@@ -509,6 +563,16 @@ const UserDashboard = () => {
             <div className="card">
               <h3 className="card-title">Recent Activity</h3>
               <div className="activity-list">
+                {activities.length === 0 && (
+                  <div className="activity-item">
+                    <div className="activity-dot activity-dot--info">.</div>
+                    <div className="activity-content">
+                      <h4>No Complaints Yet</h4>
+                      <p>Your submitted complaint updates will appear here.</p>
+                      <span className="activity-time">Just now</span>
+                    </div>
+                  </div>
+                )}
                 {activities.map((item) => (
                   <div key={item.id} className="activity-item">
                     <div className={`activity-dot activity-dot--${item.status}`}>{item.status === 'success' ? 'V' : '.'}</div>

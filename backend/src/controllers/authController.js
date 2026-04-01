@@ -61,13 +61,30 @@ export const login = async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const candidateEmails = [normalizedEmail];
+    const primaryDemoCitizenEmail = 'arjun.krishnan@ecocity.in';
 
-    // Keep demo citizen login stable across UI hints and old docs.
-    if (normalizedEmail === 'citizen@example.com') {
-      candidateEmails.push('user@example.com');
+    // Keep demo citizen login stable across old hints and new realistic identity.
+    if (normalizedEmail === 'citizen@example.com' || normalizedEmail === 'user@example.com') {
+      candidateEmails.push(primaryDemoCitizenEmail);
     }
 
-    const isDemoCitizenEmail = normalizedEmail === 'citizen@example.com' || normalizedEmail === 'user@example.com';
+    if (normalizedEmail === primaryDemoCitizenEmail) {
+      candidateEmails.push('citizen@example.com', 'user@example.com');
+    }
+
+    // Keep admin demo login compatible with older seeded data.
+    if (normalizedEmail === 'admin@example.com') {
+      candidateEmails.push('meera.iyer@ecocity.in');
+    }
+
+    if (normalizedEmail === 'meera.iyer@ecocity.in') {
+      candidateEmails.push('admin@example.com');
+    }
+
+    const isDemoCitizenEmail =
+      normalizedEmail === primaryDemoCitizenEmail ||
+      normalizedEmail === 'citizen@example.com' ||
+      normalizedEmail === 'user@example.com';
     const isAllowedDemoPassword = password === '123456' || password === '1234';
 
     let user = null;
@@ -82,15 +99,16 @@ export const login = async (req, res) => {
     if (!user && isDemoCitizenEmail && isAllowedDemoPassword) {
       user = new User({
         userId: uuidv4(),
-        name: 'Demo User',
-        email: 'user@example.com',
+        name: 'Arjun Krishnan',
+        email: primaryDemoCitizenEmail,
         password: '123456',
-        phone: '+1234567891',
+        phone: '+91 9876543210',
         address: {
-          street: 'Ward 21',
+          street: 'No. 18, Luz Church Road, Mylapore',
           city: 'Chennai',
           state: 'Tamil Nadu',
-          zipcode: '600002',
+          zipcode: '600004',
+          country: 'India',
         },
         role: 'user',
       });

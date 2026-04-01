@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Typography, Button, Container, Menu, MenuItem } from '@mui/material';
-import PlaceIcon from '@mui/icons-material/Place';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import ErrorIcon from '@mui/icons-material/Error';
 import SchoolIcon from '@mui/icons-material/School';
@@ -74,15 +73,19 @@ const NavBar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [profileMenuPosition, setProfileMenuPosition] = useState(null);
   const [featuresAnchorEl, setFeaturesAnchorEl] = useState(null);
 
   const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+    const triggerRect = event.currentTarget.getBoundingClientRect();
+    setProfileMenuPosition({
+      top: Math.round(triggerRect.bottom + 8),
+      left: Math.round(triggerRect.right),
+    });
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
+    setProfileMenuPosition(null);
   };
 
   const handleFeaturesMenuOpen = (event) => {
@@ -102,6 +105,12 @@ const NavBar = () => {
     logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    // Prevent stale menu anchors when route/layout updates.
+    handleMenuClose();
+    handleFeaturesMenuClose();
+  }, [location.pathname]);
 
   // Hide navbar on public auth screens.
   if (location.pathname === '/login' || location.pathname === '/register') {
@@ -175,20 +184,6 @@ const NavBar = () => {
                 onMouseLeave: handleFeaturesMenuClose,
               }}
             >
-              <MenuItem
-                onClick={() => handleFeatureNavigate('/user/bins')}
-                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-              >
-                <PlaceIcon sx={{ fontSize: 20, color: '#ff6b6b' }} />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    Locate Bins
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
-                    Find nearby disposal points
-                  </Typography>
-                </Box>
-              </MenuItem>
               <MenuItem
                 onClick={() => handleFeatureNavigate('/user/tracking')}
                 sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
@@ -283,9 +278,12 @@ const NavBar = () => {
               {user?.name} ▼
             </Button>
             <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
+              anchorReference="anchorPosition"
+              anchorPosition={profileMenuPosition || undefined}
+              open={Boolean(profileMenuPosition)}
               onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
               <MenuItem onClick={() => navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard')}>
                 Profile
