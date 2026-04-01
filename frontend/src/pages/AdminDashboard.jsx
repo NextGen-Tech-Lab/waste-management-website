@@ -284,42 +284,44 @@ const AdminDashboard = () => {
           <div className="admin-hero-glow" />
         </section>
 
-        <section className="admin-kpi-grid">
-          <article className="admin-kpi-card">
-            <div className="admin-kpi-head">
-              <span className="admin-kpi-icon">R</span>
-              <span className="admin-kpi-badge admin-kpi-badge--ok">Closed Loop</span>
-            </div>
-            <p>Active Routes</p>
-            <h3>{liveSnapshot.stats?.activeRoutes || 0}</h3>
-          </article>
+        {activePanel !== 'education' && (
+          <section className="admin-kpi-grid">
+            <article className="admin-kpi-card">
+              <div className="admin-kpi-head">
+                <span className="admin-kpi-icon">R</span>
+                <span className="admin-kpi-badge admin-kpi-badge--ok">Closed Loop</span>
+              </div>
+              <p>Active Routes</p>
+              <h3>{liveSnapshot.stats?.activeRoutes || 0}</h3>
+            </article>
 
-          <article className="admin-kpi-card">
-            <div className="admin-kpi-head">
-              <span className="admin-kpi-icon">V</span>
-            </div>
-            <p>Active Vehicles</p>
-            <h3>{liveSnapshot.stats?.activeVehicles || 0}</h3>
-          </article>
+            <article className="admin-kpi-card">
+              <div className="admin-kpi-head">
+                <span className="admin-kpi-icon">V</span>
+              </div>
+              <p>Active Vehicles</p>
+              <h3>{liveSnapshot.stats?.activeVehicles || 0}</h3>
+            </article>
 
-          <article className="admin-kpi-card">
-            <div className="admin-kpi-head">
-              <span className="admin-kpi-icon">P</span>
-              <span className="admin-kpi-badge admin-kpi-badge--ok">Live</span>
-            </div>
-            <p>Completed Pickups</p>
-            <h3>{liveSnapshot.stats?.completedPickups || 0}</h3>
-          </article>
+            <article className="admin-kpi-card">
+              <div className="admin-kpi-head">
+                <span className="admin-kpi-icon">P</span>
+                <span className="admin-kpi-badge admin-kpi-badge--ok">Live</span>
+              </div>
+              <p>Completed Pickups</p>
+              <h3>{liveSnapshot.stats?.completedPickups || 0}</h3>
+            </article>
 
-          <article className="admin-kpi-card">
-            <div className="admin-kpi-head">
-              <span className="admin-kpi-icon">B</span>
-              <span className="admin-kpi-badge admin-kpi-badge--danger">Priority</span>
-            </div>
-            <p>Bins Need Pickup</p>
-            <h3>{liveSnapshot.stats?.binsNeedPickup || 0}</h3>
-          </article>
-        </section>
+            <article className="admin-kpi-card">
+              <div className="admin-kpi-head">
+                <span className="admin-kpi-icon">B</span>
+                <span className="admin-kpi-badge admin-kpi-badge--danger">Priority</span>
+              </div>
+              <p>Bins Need Pickup</p>
+              <h3>{liveSnapshot.stats?.binsNeedPickup || 0}</h3>
+            </article>
+          </section>
+        )}
 
         {activePanel === 'education' ? (
           <AdminEducationManagement />
