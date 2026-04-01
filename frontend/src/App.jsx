@@ -5,6 +5,7 @@ import PlaceIcon from '@mui/icons-material/Place';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import ErrorIcon from '@mui/icons-material/Error';
 import SchoolIcon from '@mui/icons-material/School';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { useAuth } from './utils/useAuth.js';
 
@@ -25,6 +26,7 @@ import EducationalMaterials from './pages/EducationalMaterials.jsx';
 import PolicyDocuments from './pages/PolicyDocuments.jsx';
 import ToolsCalculators from './pages/ToolsCalculators.jsx';
 import CommunityResources from './pages/CommunityResources.jsx';
+import BuyBins from './pages/BuyBins.jsx';
 
 // Calculator Pages
 import CarbonFootprintCalculator from './pages/CarbonFootprintCalculator.jsx';
@@ -229,6 +231,20 @@ const NavBar = () => {
                   </Typography>
                 </Box>
               </MenuItem>
+              <MenuItem
+                onClick={() => handleFeatureNavigate('/buy-bins')}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+              >
+                <ShoppingCartIcon sx={{ fontSize: 20, color: '#ffa500' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Buy Bins
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '11px' }}>
+                    Shop dustbins on Amazon
+                  </Typography>
+                </Box>
+              </MenuItem>
             </Menu>
 
             <Button
@@ -250,6 +266,14 @@ const NavBar = () => {
               onClick={() => navigate('/resources')}
             >
               Resources
+            </Button>
+
+            <Button
+              sx={{ color: '#ffffff', fontWeight: 700, '&:hover': { background: 'rgba(255, 255, 255, 0.15)' } }}
+              onClick={() => navigate('/buy-bins')}
+              startIcon={<ShoppingCartIcon />}
+            >
+              Buy Bins
             </Button>
 
             <Button
@@ -384,6 +408,15 @@ export const AppContent = () => {
             element={
               <ProtectedRoute>
                 <EducationCenter />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/buy-bins"
+            element={
+              <ProtectedRoute>
+                <BuyBins />
               </ProtectedRoute>
             }
           />
