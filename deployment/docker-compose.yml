@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: waste_management_db
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - waste-network
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.backend
+    container_name: waste_management_backend
+    ports:
+      - '5000:5000'
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/waste-management?authSource=admin
+      JWT_SECRET: your_jwt_secret_key_here_CHANGEME_PRODUCTION
+      JWT_EXPIRATION: 7d
+      BCRYPT_ROUNDS: 10
+      CORS_ORIGIN: http://localhost:3000
+      SOCKET_IO_CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - waste-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.frontend
+    container_name: waste_management_frontend
+    ports:
+      - '3000:80'
+    depends_on:
+      - backend
+    networks:
+      - waste-network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+
+networks:
+  waste-network:
+    driver: bridge
