@@ -81,7 +81,7 @@ const formatTimeAgo = (value) => {
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, refreshProfile } = useAuth();
 
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -310,6 +310,13 @@ const UserDashboard = () => {
   };
 
   const handleEditProfile = () => {
+    // Always re-populate form from the latest profile before opening modal
+    setEditFormData({
+      name: profile?.name || '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+    });
+    setError(null);
     setIsEditModalOpen(true);
   };
 
@@ -336,29 +343,15 @@ const UserDashboard = () => {
     setError(null);
 
     try {
-      const response = await updateProfile({
+      await updateProfile({
         name: editFormData.name.trim(),
         phone: editFormData.phone.trim(),
         address: editFormData.address.trim(),
       });
-
-      const savedUser = response?.user || {};
-      const savedAddress =
-        savedUser?.address?.street ||
-        (typeof savedUser?.address === 'string' ? savedUser.address : '') ||
-        editFormData.address.trim();
-
-      setProfile((prev) => ({
-        ...(prev || {}),
-        name: savedUser?.name || editFormData.name.trim(),
-        phone: savedUser?.phone || editFormData.phone.trim(),
-        address: savedAddress || editFormData.address.trim(),
-      }));
-      setEditFormData({
-        name: savedUser?.name || editFormData.name.trim(),
-        phone: savedUser?.phone || editFormData.phone.trim(),
-        address: savedAddress || editFormData.address.trim(),
-      });
+      // AuthContext.updateProfile already updates the global `user` state,
+      // and the useEffect([user]) above will re-hydrate `profile` automatically.
+      // Also refresh from server to guarantee the DB state is reflected.
+      await refreshProfile();
       setIsEditModalOpen(false);
     } catch (saveError) {
       setError(saveError?.response?.data?.message || 'Unable to save profile right now. Please try again.');
@@ -412,7 +405,7 @@ const UserDashboard = () => {
             <div className="card profile-card">
               <div className="profile-header">
                 <div className="profile-avatar">
-                  <span className="avatar-icon">C</span>
+                  <span className="avatar-icon">{profile?.name ? profile.name.charAt(0).toUpperCase() : 'C'}</span>
                 </div>
                 <div className="profile-meta">
                   <h2>{profile?.name}</h2>

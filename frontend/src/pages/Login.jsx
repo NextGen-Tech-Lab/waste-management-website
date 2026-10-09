@@ -5,7 +5,7 @@ import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const [activeForm, setActiveForm] = useState('citizen');
   const [citizenData, setCitizenData] = useState({ email: '', password: '' });
@@ -37,7 +37,20 @@ const Login = () => {
     try {
       const email = citizenData.email.trim().toLowerCase();
       const password = citizenData.password.trim();
-      await login(email, password);
+      const authResult = await login(email, password);
+
+      // Check if the authenticated account is actually an admin.
+      // The login response always includes the user role.
+      const role = authResult?.user?.role;
+      if (role === 'admin') {
+        // Log the session out immediately so the admin token isn't left active.
+        logout();
+        setCitizenError(
+          '⚠️ These are admin credentials. Please click the "Admin" tab above to log in as an administrator.'
+        );
+        return;
+      }
+
       navigate('/user/dashboard');
     } catch (err) {
       setCitizenError(err.response?.data?.message || 'Invalid credentials. Please try again.');
@@ -58,7 +71,11 @@ const Login = () => {
       const authResult = await login(email, password);
       const isAdmin = authResult?.user?.role === 'admin';
       if (!isAdmin) {
-        setAdminError('This account does not have admin access.');
+        // Log the session out immediately so the citizen token isn't left active.
+        logout();
+        setAdminError(
+          '⚠️ These are citizen credentials. Please click the "Citizen" tab above to log in as a regular user.'
+        );
         return;
       }
       navigate('/admin/dashboard');
@@ -71,6 +88,8 @@ const Login = () => {
 
   const loginError = activeForm === 'citizen' ? citizenError : adminError;
   const isLoading = loadingRole === activeForm;
+  // Amber style for "wrong tab" messages, red for actual invalid-credentials
+  const isRoleMismatch = loginError.startsWith('⚠️');
 
   return (
     <div className="login-page">
@@ -161,7 +180,9 @@ const Login = () => {
                 <span className="register-link muted">Demo citizen login: arjun.krishnan@ecocity.in / 123456</span>
               </div>
 
-              {loginError && <div className="error-box">{loginError}</div>}
+              {loginError && (
+                <div className={`error-box${isRoleMismatch ? ' error-box--warn' : ''}`}>{loginError}</div>
+              )}
 
               <button className="login-btn citizen" type="submit" disabled={isLoading}>
                 {isLoading ? 'Authenticating...' : 'Sign In'}
@@ -210,7 +231,9 @@ const Login = () => {
                 />
               </div>
 
-              {loginError && <div className="error-box">{loginError}</div>}
+              {loginError && (
+                <div className={`error-box${isRoleMismatch ? ' error-box--warn' : ''}`}>{loginError}</div>
+              )}
 
               <button className="login-btn admin" type="submit" disabled={isLoading}>
                 {isLoading ? 'Authenticating...' : 'Secure Access'}

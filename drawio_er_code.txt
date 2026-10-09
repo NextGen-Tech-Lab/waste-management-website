@@ -1,0 +1,136 @@
+-- SQL DDL for Draw.io Database ER Diagram
+-- INSTRUCTIONS FOR DRAW.IO:
+-- 1. Open app.diagrams.net (Draw.io)
+-- 2. Go to Arrange -> Insert -> Advanced -> SQL...
+-- 3. Paste ALL the code below into the box and click "Insert MySQL" or "Insert SQL Server"
+-- 4. Draw.io will automatically generate beautiful ER tables and connect them with arrows for you!
+
+CREATE TABLE User (
+    _id VARCHAR PRIMARY KEY,
+    userId VARCHAR,
+    name VARCHAR,
+    email VARCHAR,
+    password VARCHAR,
+    phone VARCHAR,
+    address_street VARCHAR,
+    address_city VARCHAR,
+    address_state VARCHAR,
+    address_zipcode VARCHAR,
+    address_country VARCHAR,
+    role VARCHAR,
+    profilePicture VARCHAR,
+    isActive BOOLEAN,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+CREATE TABLE Driver (
+    _id VARCHAR PRIMARY KEY,
+    name VARCHAR,
+    contact VARCHAR
+);
+
+CREATE TABLE Bin (
+    _id VARCHAR PRIMARY KEY,
+    binId VARCHAR,
+    location_coordinates VARCHAR,
+    address_street VARCHAR,
+    address_city VARCHAR,
+    wasteType VARCHAR,
+    capacity NUMERIC,
+    currentFillLevel NUMERIC,
+    lastCollectedAt DATETIME,
+    status VARCHAR,
+    installationDate DATETIME,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+CREATE TABLE Vehicle (
+    _id VARCHAR PRIMARY KEY,
+    vehicleId VARCHAR,
+    registrationNumber VARCHAR,
+    driverId VARCHAR,
+    driverName VARCHAR,
+    driverContact VARCHAR,
+    vehicleType VARCHAR,
+    capacity NUMERIC,
+    currentLoad NUMERIC,
+    currentLocation_coordinates VARCHAR,
+    currentRoute VARCHAR,
+    status VARCHAR,
+    lastUpdated DATETIME,
+    totalCollections NUMERIC,
+    totalDistance NUMERIC,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+CREATE TABLE Route (
+    _id VARCHAR PRIMARY KEY,
+    routeId VARCHAR,
+    vehicleId VARCHAR,
+    driverId VARCHAR,
+    startTime DATETIME,
+    endTime DATETIME,
+    distance NUMERIC,
+    wasteCollected NUMERIC,
+    status VARCHAR,
+    notes VARCHAR,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+CREATE TABLE Complaint (
+    _id VARCHAR PRIMARY KEY,
+    complaintId VARCHAR,
+    userId VARCHAR,
+    binId VARCHAR,
+    vehicleId VARCHAR,
+    category VARCHAR,
+    subject VARCHAR,
+    description VARCHAR,
+    severity VARCHAR,
+    location_coordinates VARCHAR,
+    status VARCHAR,
+    decisionReason VARCHAR,
+    assignedTo VARCHAR,
+    resolvedAt DATETIME,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+CREATE TABLE EducationContent (
+    _id VARCHAR PRIMARY KEY,
+    contentId VARCHAR,
+    title VARCHAR,
+    description VARCHAR,
+    category VARCHAR,
+    contentType VARCHAR,
+    videoURL VARCHAR,
+    articleContent VARCHAR,
+    infographicURL VARCHAR,
+    thumbnail VARCHAR,
+    uploadedBy VARCHAR,
+    uploadDate DATETIME,
+    views NUMERIC,
+    likes NUMERIC,
+    published BOOLEAN,
+    scheduledPublishDate DATETIME,
+    createdAt DATETIME,
+    updatedAt DATETIME
+);
+
+-- Relationships (Foreign Keys) for Arrow Generation
+ALTER TABLE Vehicle ADD CONSTRAINT FK_Vehicle_Route FOREIGN KEY (currentRoute) REFERENCES Route(_id);
+ALTER TABLE Vehicle ADD CONSTRAINT FK_Vehicle_Driver FOREIGN KEY (driverId) REFERENCES Driver(_id);
+
+ALTER TABLE Route ADD CONSTRAINT FK_Route_Vehicle FOREIGN KEY (vehicleId) REFERENCES Vehicle(_id);
+ALTER TABLE Route ADD CONSTRAINT FK_Route_Driver FOREIGN KEY (driverId) REFERENCES Driver(_id);
+
+ALTER TABLE Complaint ADD CONSTRAINT FK_Complaint_User FOREIGN KEY (userId) REFERENCES User(_id);
+ALTER TABLE Complaint ADD CONSTRAINT FK_Complaint_Bin FOREIGN KEY (binId) REFERENCES Bin(_id);
+ALTER TABLE Complaint ADD CONSTRAINT FK_Complaint_Vehicle FOREIGN KEY (vehicleId) REFERENCES Vehicle(_id);
+ALTER TABLE Complaint ADD CONSTRAINT FK_Complaint_Assigned FOREIGN KEY (assignedTo) REFERENCES User(_id);
+
+ALTER TABLE EducationContent ADD CONSTRAINT FK_Education_User FOREIGN KEY (uploadedBy) REFERENCES User(_id);

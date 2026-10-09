@@ -15,8 +15,37 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import binService from '../services/binService.js';
+
+// Fix Leaflet's default icon issue in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// Haversine formula to calculate distance between two coordinates in km
+const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+  const toRad = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
 
 const BinsNearMe = () => {
   const [bins, setBins] = useState([]);
@@ -25,10 +54,16 @@ const BinsNearMe = () => {
   const [resolvedLocation, setResolvedLocation] = useState(null);
   const [autoDetecting, setAutoDetecting] = useState(false);
   const [filters, setFilters] = useState({
-    location: '',
+    location: '13.0827, 80.2707', // Default to Chennai center to match seed data
     nearestCount: 5,
     wasteType: '',
   });
+
+  // Routing state
+  const [selectedBinPath, setSelectedBinPath] = useState(null);
+  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [routingLoading, setRoutingLoading] = useState(false);
+  const [routingError, setRoutingError] = useState('');
 
   const geocodeLocation = async (locationName) => {
     const response = await fetch(
@@ -56,16 +91,37 @@ const BinsNearMe = () => {
     setError('');
     try {
       const searchFilters = filterObj || filters;
-      const nearbyBins = await binService.getNearbyBins({
-        latitude,
-        longitude,
-        radius: 5,
-        wasteType: searchFilters.wasteType,
-        status: 'active',
-      });
+      // Fetch all bins, optionally filtered by wasteType and status on the backend
+      const filtersForBackend = { status: 'active' };
+      if (searchFilters.wasteType) {
+        filtersForBackend.wasteType = searchFilters.wasteType;
+      }
+      
+      const allBins = await binService.getAllBins(filtersForBackend);
+
+      // Perform distance calculation on the client side
+      // Removed radius limit to always show the N absolute nearest bins
+      
+      const binsWithDistance = allBins.map(bin => {
+        // Handle GeoJSON Point coordinates (longitude, latitude)
+        let binLat, binLng;
+        if (bin.location && bin.location.coordinates) {
+          binLng = bin.location.coordinates[0];
+          binLat = bin.location.coordinates[1];
+        }
+        
+        if (binLat !== undefined && binLng !== undefined) {
+          const distance = getDistanceKm(latitude, longitude, binLat, binLng);
+          return { ...bin, distance };
+        }
+        return null;
+      }).filter(bin => bin !== null);
+
+      // Sort by distance (closest first)
+      binsWithDistance.sort((a, b) => a.distance - b.distance);
 
       const nearestCount = Math.max(1, Number(searchFilters.nearestCount) || 1);
-      setBins(nearbyBins.slice(0, nearestCount));
+      setBins(binsWithDistance.slice(0, nearestCount));
       setResolvedLocation({ latitude, longitude });
     } catch (error) {
       console.error('Failed to fetch bins:', error);
@@ -144,6 +200,18 @@ const BinsNearMe = () => {
       return;
     }
 
+    // Check if the input is a coordinate pair (e.g. "13.0827, 80.2707")
+    const coordMatch = locationName.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+    if (coordMatch) {
+      const latitude = parseFloat(coordMatch[1]);
+      const longitude = parseFloat(coordMatch[3]);
+      await searchBins(latitude, longitude, {
+        ...filters,
+        nearestCount,
+      });
+      return;
+    }
+
     try {
       const location = await geocodeLocation(locationName);
       await searchBins(location.latitude, location.longitude, {
@@ -155,6 +223,44 @@ const BinsNearMe = () => {
       console.error('Failed to resolve location:', searchError);
       setError(searchError?.message || 'Failed to resolve location.');
       setBins([]);
+    }
+  };
+
+  const handleShowPath = async (bin) => {
+    setSelectedBinPath(bin);
+    setRouteGeometry(null);
+    setRoutingError('');
+    setRoutingLoading(true);
+
+    try {
+      const userLat = resolvedLocation.latitude;
+      const userLng = resolvedLocation.longitude;
+      const binLat = bin.location.coordinates[1];
+      const binLng = bin.location.coordinates[0];
+
+      // Use public OSRM driving route API
+      const response = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${userLng},${userLat};${binLng},${binLat}?overview=full&geometries=geojson`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch route');
+      }
+
+      const data = await response.json();
+      if (data.code === 'Ok' && data.routes.length > 0) {
+        const coords = data.routes[0].geometry.coordinates;
+        // OSRM returns [lon, lat], Leaflet expects [lat, lon]
+        const latLngs = coords.map((c) => [c[1], c[0]]);
+        setRouteGeometry(latLngs);
+      } else {
+        throw new Error('No route found');
+      }
+    } catch (err) {
+      console.error('Routing error:', err);
+      setRoutingError('Could not calculate a route to this bin.');
+    } finally {
+      setRoutingLoading(false);
     }
   };
 
@@ -323,6 +429,12 @@ const BinsNearMe = () => {
                     <Typography variant="body2" sx={{ mb: 2 }}>
                       <strong>Coordinates:</strong> {bin.location?.coordinates?.[1]?.toFixed?.(6) ?? bin.location?.coordinates?.[1]}, {bin.location?.coordinates?.[0]?.toFixed?.(6) ?? bin.location?.coordinates?.[0]}
                     </Typography>
+                    
+                    {bin.distance !== undefined && (
+                      <Typography variant="body2" sx={{ mb: 2, color: 'primary.main', fontWeight: 'bold' }}>
+                        <strong>Distance:</strong> {bin.distance.toFixed(2)} km
+                      </Typography>
+                    )}
 
                     {bin.currentFillLevel > 85 && (
                       <Alert severity="warning" sx={{ mb: 2 }}>
@@ -330,6 +442,15 @@ const BinsNearMe = () => {
                       </Alert>
                     )}
 
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      sx={{ mt: 1, width: '100%', borderColor: 'primary.main', color: 'primary.main' }}
+                      onClick={() => handleShowPath(bin)}
+                      disabled={!resolvedLocation}
+                    >
+                      Show Path
+                    </Button>
                   </CardContent>
                 </Card>
               </Grid>
@@ -341,6 +462,53 @@ const BinsNearMe = () => {
           )}
         </Grid>
       )}
+
+      {/* Path Dialog */}
+      <Dialog
+        open={Boolean(selectedBinPath)}
+        onClose={() => setSelectedBinPath(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 'bold' }}>
+          Route to Bin {selectedBinPath?.binId?.slice(0, 8)}
+        </DialogTitle>
+        <DialogContent dividers>
+          {routingLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {routingError && <Alert severity="error">{routingError}</Alert>}
+          {!routingLoading && routeGeometry && selectedBinPath && resolvedLocation && (
+            <Box sx={{ height: 400, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
+              <MapContainer
+                center={routeGeometry[Math.floor(routeGeometry.length / 2)] || [resolvedLocation.latitude, resolvedLocation.longitude]}
+                zoom={12}
+                scrollWheelZoom={true}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker position={[resolvedLocation.latitude, resolvedLocation.longitude]}>
+                  <Popup>Your Search Location</Popup>
+                </Marker>
+                <Marker position={[selectedBinPath.location.coordinates[1], selectedBinPath.location.coordinates[0]]}>
+                  <Popup>Waste Bin: {selectedBinPath.wasteType}</Popup>
+                </Marker>
+                <Polyline positions={routeGeometry} color="#1b5e20" weight={6} opacity={0.8} />
+              </MapContainer>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setSelectedBinPath(null)} color="inherit" variant="outlined">
+            Close Map
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

@@ -321,6 +321,7 @@
   color: #1f5f2b;
 }
 
+
 @media (min-width: 860px) {
   .login-header {
     padding: 0 2rem;
@@ -336,3 +337,37 @@
     align-items: flex-start;
   }
 }
+
+/* ── Error / Warning boxes ─────────────────────────────────── */
+
+.error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1.5px solid #f5c2c2;
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+  animation: shakeIn 0.3s ease;
+}
+
+/* Amber "wrong-tab" warning — not a hard error, just redirect guidance */
+.error-box--warn {
+  background: #fff8e6;
+  color: #7a4f00;
+  border-color: #f0d080;
+}
+
+@keyframes shakeIn {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+

@@ -65,7 +65,7 @@ const closePathIfNeeded = (path) => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile, refreshProfile } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [activePanel, setActivePanel] = useState('analytics');
@@ -86,6 +86,13 @@ const AdminDashboard = () => {
 
   const [selectedTruckId, setSelectedTruckId] = useState('');
   const [togglePending, setTogglePending] = useState({});
+
+  // ── Admin Profile Edit ──────────────────────────────────────────────────
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '', address: '' });
 
   const fetchLiveSnapshot = async () => {
     try {
@@ -221,6 +228,51 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
+  const handleOpenProfileModal = () => {
+    setProfileForm({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      address:
+        user?.address?.street ||
+        (typeof user?.address === 'string' ? user.address : '') ||
+        [user?.address?.city, user?.address?.state, user?.address?.zipcode].filter(Boolean).join(', ') ||
+        '',
+    });
+    setProfileError('');
+    setProfileSuccess('');
+    setIsProfileModalOpen(true);
+  };
+
+  const handleProfileFormChange = (e) => {
+    const { name, value } = e.target;
+    setProfileForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveAdminProfile = async (e) => {
+    e.preventDefault();
+    if (!profileForm.name.trim()) {
+      setProfileError('Name is required.');
+      return;
+    }
+    setIsSubmittingProfile(true);
+    setProfileError('');
+    setProfileSuccess('');
+    try {
+      await updateProfile({
+        name: profileForm.name.trim(),
+        phone: profileForm.phone.trim(),
+        address: profileForm.address.trim(),
+      });
+      await refreshProfile();
+      setProfileSuccess('Profile updated successfully!');
+      setTimeout(() => setIsProfileModalOpen(false), 1000);
+    } catch (err) {
+      setProfileError(err?.response?.data?.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setIsSubmittingProfile(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-loading-shell">
@@ -266,7 +318,15 @@ const AdminDashboard = () => {
 
         <div className="admin-nav-actions">
           <button type="button" className="admin-logout-btn" onClick={handleAdminLogout}>Logout</button>
-          <button type="button" className="admin-avatar" aria-label="Admin profile">A</button>
+          <button
+            type="button"
+            className="admin-avatar"
+            aria-label="Edit admin profile"
+            title="Edit Profile"
+            onClick={handleOpenProfileModal}
+          >
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+          </button>
         </div>
       </header>
 
@@ -569,6 +629,92 @@ const AdminDashboard = () => {
           </section>
         )}
       </main>
+
+      {/* ── Admin Profile Modal ─────────────────────────────── */}
+      {isProfileModalOpen && (
+        <div className="admin-profile-backdrop" onClick={() => !isSubmittingProfile && setIsProfileModalOpen(false)}>
+          <div className="admin-profile-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-profile-title">
+            <div className="admin-profile-modal-header">
+              <h2 id="admin-profile-title">Edit Admin Profile</h2>
+              <button
+                type="button"
+                className="admin-profile-close"
+                onClick={() => setIsProfileModalOpen(false)}
+                disabled={isSubmittingProfile}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="admin-profile-avatar-row">
+              <div className="admin-profile-avatar-circle">
+                {profileForm.name ? profileForm.name.charAt(0).toUpperCase() : 'A'}
+              </div>
+              <div>
+                <p className="admin-profile-role">Administrator</p>
+                <p className="admin-profile-email">{user?.email}</p>
+              </div>
+            </div>
+
+            <form className="admin-profile-form" onSubmit={handleSaveAdminProfile}>
+              <div className="admin-profile-field">
+                <label htmlFor="admin-edit-name">Full Name</label>
+                <input
+                  id="admin-edit-name"
+                  type="text"
+                  name="name"
+                  value={profileForm.name}
+                  onChange={handleProfileFormChange}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+
+              <div className="admin-profile-field">
+                <label htmlFor="admin-edit-phone">Phone Number</label>
+                <input
+                  id="admin-edit-phone"
+                  type="tel"
+                  name="phone"
+                  value={profileForm.phone}
+                  onChange={handleProfileFormChange}
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              <div className="admin-profile-field">
+                <label htmlFor="admin-edit-address">Address</label>
+                <textarea
+                  id="admin-edit-address"
+                  name="address"
+                  rows="3"
+                  value={profileForm.address}
+                  onChange={handleProfileFormChange}
+                  placeholder="Enter your address"
+                />
+              </div>
+
+              {profileError && <p className="admin-profile-error">{profileError}</p>}
+              {profileSuccess && <p className="admin-profile-success">{profileSuccess}</p>}
+
+              <div className="admin-profile-actions">
+                <button
+                  type="button"
+                  className="admin-profile-cancel"
+                  onClick={() => setIsProfileModalOpen(false)}
+                  disabled={isSubmittingProfile}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="admin-profile-save" disabled={isSubmittingProfile}>
+                  {isSubmittingProfile ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <footer className="admin-footer">
         <div className="admin-footer-links">
