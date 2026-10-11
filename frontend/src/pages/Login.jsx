@@ -53,7 +53,7 @@ const Login = () => {
 
       navigate('/user/dashboard');
     } catch (err) {
-      setCitizenError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+      setCitizenError(err.response?.data?.message || err.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading('citizen', false);
     }
@@ -80,7 +80,7 @@ const Login = () => {
       }
       navigate('/admin/dashboard');
     } catch (err) {
-      setAdminError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+      setAdminError(err.response?.data?.message || err.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading('admin', false);
     }

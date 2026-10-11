@@ -63,6 +63,24 @@ const closePathIfNeeded = (path) => {
   return [...path, first];
 };
 
+const formatAddress = (addr) => {
+  if (!addr) return '';
+  if (typeof addr === 'string') return addr.trim();
+  if (typeof addr === 'object') {
+    const parts = [
+      addr.street,
+      addr.city,
+      addr.state,
+      addr.zipcode,
+      addr.country,
+    ]
+      .map((p) => (typeof p === 'string' ? p.trim() : ''))
+      .filter(Boolean);
+    return parts.join(', ');
+  }
+  return '';
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, logout, updateProfile, refreshProfile } = useAuth();
@@ -232,11 +250,7 @@ const AdminDashboard = () => {
     setProfileForm({
       name: user?.name || '',
       phone: user?.phone || '',
-      address:
-        user?.address?.street ||
-        (typeof user?.address === 'string' ? user.address : '') ||
-        [user?.address?.city, user?.address?.state, user?.address?.zipcode].filter(Boolean).join(', ') ||
-        '',
+      address: formatAddress(user?.address),
     });
     setProfileError('');
     setProfileSuccess('');

@@ -528,6 +528,11 @@ const ComplaintManagement = () => {
         </DialogTitle>
         <Divider />
         <DialogContent sx={{ pt: 2 }}>
+          {message && (
+            <Alert severity={messageType} sx={{ mb: 2 }} onClose={() => setMessage('')}>
+              {message}
+            </Alert>
+          )}
           {!selectedComplaint && (
             <Stack spacing={2}>
               <FormControl fullWidth>
@@ -850,6 +855,11 @@ const ComplaintManagement = () => {
         </DialogTitle>
         <Divider />
         <DialogContent sx={{ pt: 2 }}>
+          {message && (
+            <Alert severity={messageType} sx={{ mb: 2 }} onClose={() => setMessage('')}>
+              {message}
+            </Alert>
+          )}
           {!selectedComplaint && (
             <Stack spacing={2}>
               <FormControl fullWidth>

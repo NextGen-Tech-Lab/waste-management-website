@@ -8,6 +8,24 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './UserDashboard.css';
 
+const formatAddress = (addr) => {
+  if (!addr) return '';
+  if (typeof addr === 'string') return addr.trim();
+  if (typeof addr === 'object') {
+    const parts = [
+      addr.street,
+      addr.city,
+      addr.state,
+      addr.zipcode,
+      addr.country,
+    ]
+      .map((p) => (typeof p === 'string' ? p.trim() : ''))
+      .filter(Boolean);
+    return parts.join(', ');
+  }
+  return '';
+};
+
 const hashToIndex = (value, size) => {
   if (!value || size <= 0) {
     return 0;
@@ -86,6 +104,7 @@ const UserDashboard = () => {
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [modalError, setModalError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '', address: '' });
   const [liveRouteData, setLiveRouteData] = useState(null);
@@ -96,17 +115,14 @@ const UserDashboard = () => {
       return;
     }
 
-    const address =
-      user?.address?.street ||
-      (typeof user?.address === 'string' ? user.address : '') ||
-      [user?.address?.city, user?.address?.state, user?.address?.zipcode].filter(Boolean).join(', ');
+    const formattedAddress = formatAddress(user?.address);
 
     const hydratedProfile = {
       name: user?.name || 'Citizen User',
       email: user?.email || 'not-available@example.com',
-      phone: user?.phone || '+91 00000 00000',
-      address: address || 'Address not available',
-      citizenId: user?._id ? `#${String(user._id).slice(0, 8).toUpperCase()}` : '#IND-0000',
+      phone: user?.phone || '',
+      address: formattedAddress || '',
+      citizenId: user?._id || user?.id ? `#${String(user._id || user.id).slice(0, 8).toUpperCase()}` : '#IND-0000',
     };
 
     setProfile(hydratedProfile);
@@ -317,6 +333,7 @@ const UserDashboard = () => {
       address: profile?.address || '',
     });
     setError(null);
+    setModalError(null);
     setIsEditModalOpen(true);
   };
 
@@ -333,14 +350,20 @@ const UserDashboard = () => {
 
   const handleSaveProfile = async (event) => {
     event.preventDefault();
+    setModalError(null);
 
     if (!editFormData.name.trim() || !editFormData.phone.trim() || !editFormData.address.trim()) {
-      setError('Please fill all profile fields before saving.');
+      setModalError('Please fill all profile fields before saving.');
+      return;
+    }
+
+    const cleanPhone = editFormData.phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) {
+      setModalError('Please enter a valid phone number (at least 10 digits).');
       return;
     }
 
     setIsSubmittingEdit(true);
-    setError(null);
 
     try {
       await updateProfile({
@@ -348,13 +371,10 @@ const UserDashboard = () => {
         phone: editFormData.phone.trim(),
         address: editFormData.address.trim(),
       });
-      // AuthContext.updateProfile already updates the global `user` state,
-      // and the useEffect([user]) above will re-hydrate `profile` automatically.
-      // Also refresh from server to guarantee the DB state is reflected.
       await refreshProfile();
       setIsEditModalOpen(false);
     } catch (saveError) {
-      setError(saveError?.response?.data?.message || 'Unable to save profile right now. Please try again.');
+      setModalError(saveError?.response?.data?.message || saveError?.message || 'Unable to save profile right now. Please try again.');
     } finally {
       setIsSubmittingEdit(false);
     }
@@ -425,14 +445,14 @@ const UserDashboard = () => {
                   <span className="detail-icon">T</span>
                   <div>
                     <label>Phone</label>
-                    <p>{profile?.phone}</p>
+                    <p>{profile?.phone || 'Not provided'}</p>
                   </div>
                 </div>
                 <div className="detail-item">
                   <span className="detail-icon">L</span>
                   <div>
                     <label>Address</label>
-                    <p>{profile?.address}</p>
+                    <p>{profile?.address || 'Not provided'}</p>
                   </div>
                 </div>
               </div>
@@ -637,6 +657,26 @@ const UserDashboard = () => {
               </div>
 
               <form className="modal-form" onSubmit={handleSaveProfile}>
+                {modalError && (
+                  <div
+                    style={{
+                      backgroundColor: '#ffebee',
+                      color: '#c62828',
+                      border: '1px solid #ef9a9a',
+                      borderRadius: '6px',
+                      padding: '10px 14px',
+                      marginBottom: '16px',
+                      fontSize: '0.88rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>⚠️</span>
+                    <span>{modalError}</span>
+                  </div>
+                )}
                 <div className="form-group">
                   <label htmlFor="edit-name">Full Name</label>
                   <input

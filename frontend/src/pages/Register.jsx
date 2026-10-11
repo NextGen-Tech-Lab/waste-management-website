@@ -12,7 +12,11 @@ import {
   Grid,
   Divider,
   CircularProgress,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/useAuth.js';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -35,6 +39,9 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,9 +59,26 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitted(true);
+
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all required fields marked with *');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match. Please ensure both password fields match exactly.');
+      return;
+    }
+
+    const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits).');
       return;
     }
 
@@ -62,16 +86,16 @@ const Register = () => {
 
     try {
       await register({
-        name: formData.name,
-        email: formData.email,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        phone: formData.phone,
+        phone: formData.phone.trim(),
         address: formData.address,
         role: 'user',
       });
       navigate('/user/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -374,12 +398,32 @@ const Register = () => {
                         <TextField
                           fullWidth
                           name="password"
-                          type="password"
-                          placeholder="••••••••"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="At least 6 characters"
                           value={formData.password}
                           onChange={handleChange}
                           required
                           disabled={loading}
+                          error={Boolean(submitted && formData.password.length < 6)}
+                          helperText={
+                            submitted && formData.password.length < 6
+                              ? 'Password must be at least 6 characters'
+                              : ''
+                          }
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  edge="end"
+                                  size="small"
+                                  aria-label="toggle password visibility"
+                                >
+                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 1,
@@ -404,12 +448,49 @@ const Register = () => {
                         <TextField
                           fullWidth
                           name="confirmPassword"
-                          type="password"
-                          placeholder="••••••••"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="Re-enter your password"
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           required
                           disabled={loading}
+                          error={Boolean(
+                            (formData.confirmPassword && formData.password !== formData.confirmPassword) ||
+                            (submitted && formData.password !== formData.confirmPassword)
+                          )}
+                          helperText={
+                            (formData.confirmPassword && formData.password !== formData.confirmPassword) ||
+                            (submitted && formData.password !== formData.confirmPassword)
+                              ? '⚠️ Passwords do not match'
+                              : formData.confirmPassword && formData.password === formData.confirmPassword
+                              ? '✓ Passwords match'
+                              : ''
+                          }
+                          FormHelperTextProps={{
+                            sx: {
+                              color:
+                                (formData.confirmPassword && formData.password !== formData.confirmPassword) ||
+                                (submitted && formData.password !== formData.confirmPassword)
+                                  ? '#d32f2f !important'
+                                  : '#2e7d32 !important',
+                              fontWeight: '600',
+                              fontSize: '0.82rem',
+                            },
+                          }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  edge="end"
+                                  size="small"
+                                  aria-label="toggle confirm password visibility"
+                                >
+                                  {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 1,
@@ -425,6 +506,13 @@ const Register = () => {
                           }}
                         />
                       </Box>
+
+                      {/* Prominent Error Alert right above Register Button */}
+                      {error && (
+                        <Alert severity="error" sx={{ borderRadius: 1, fontWeight: '500' }}>
+                          {error}
+                        </Alert>
+                      )}
 
                       {/* Register Button */}
                       <Button

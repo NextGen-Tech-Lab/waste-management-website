@@ -11,19 +11,42 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    const normalizedAddress =
+      typeof address === 'string'
+        ? {
+            street: address.trim(),
+            city: '',
+            state: '',
+            zipcode: '',
+            country: '',
+          }
+        : {
+            street: address?.street?.trim() || '',
+            city: address?.city?.trim() || '',
+            state: address?.state?.trim() || '',
+            zipcode: address?.zipcode?.trim() || '',
+            country: address?.country?.trim() || '',
+          };
+
     const user = new User({
       userId: uuidv4(),
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password,
-      phone,
-      address: address || {},
+      phone: String(phone).trim(),
+      address: normalizedAddress,
       role: role || 'user',
     });
 
@@ -40,9 +63,12 @@ export const register = async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         userId: user.userId,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        address: user.address,
         role: user.role,
       },
     });
@@ -145,9 +171,12 @@ export const login = async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         userId: user.userId,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        address: user.address,
         role: user.role,
       },
     });

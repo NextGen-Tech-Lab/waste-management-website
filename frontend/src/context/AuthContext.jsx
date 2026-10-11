@@ -10,13 +10,19 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
 
     if (savedToken) {
       setToken(savedToken);
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch {
+          localStorage.removeItem('user');
+        }
+      }
 
       // Always re-fetch profile from server to get the latest saved data.
-      // This ensures any profile edits (name, phone, address) are reflected
-      // on every login/page refresh — instead of using a stale localStorage cache.
       authService
         .getProfile()
         .then((profile) => {
@@ -50,17 +56,16 @@ export const AuthProvider = ({ children }) => {
     }
 
     setToken(response.token);
-    // After login, immediately fetch the full profile so we get all fields
-    // (the login response only returns id/name/email/role, not phone/address).
+    if (response.user) {
+      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
     try {
       const profile = await authService.getProfile();
       setUser(profile);
       localStorage.setItem('user', JSON.stringify(profile));
     } catch {
-      setUser(response.user);
-      if (response.user) {
-        localStorage.setItem('user', JSON.stringify(response.user));
-      }
+      // response.user is already stored
     }
     return response;
   };
@@ -98,9 +103,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     const response = await authService.register(userData);
     setToken(response.token);
-    setUser(response.user);
     if (response.user) {
+      setUser(response.user);
       localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    try {
+      const profile = await authService.getProfile();
+      setUser(profile);
+      localStorage.setItem('user', JSON.stringify(profile));
+    } catch {
+      // response.user is already stored
     }
     return response;
   };
