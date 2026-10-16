@@ -380,9 +380,11 @@ const tickLogisticsLiveState = (state) => {
     bin.status = bin.dynamicFillLevel >= 85 ? 'full' : 'active';
   });
 
-  // Sync fill levels to MongoDB Atlas every 4 seconds so Atlas reflects dynamic changes
+  // Sync live telemetry to MongoDB Atlas every 4 seconds so Atlas documents update in real time
   if (!state.lastAtlasSyncAt || currentTime - state.lastAtlasSyncAt >= 4000) {
     state.lastAtlasSyncAt = currentTime;
+
+    // 1. Sync Bin fill levels & status
     Object.values(state.binsByCode).forEach((bin) => {
       Bin.updateOne(
         { binId: bin.binId },
@@ -390,6 +392,20 @@ const tickLogisticsLiveState = (state) => {
           $set: {
             currentFillLevel: bin.dynamicFillLevel,
             status: bin.status,
+          },
+        }
+      ).catch(() => {});
+    });
+
+    // 2. Sync Moving Vehicle coordinates & operational status to Atlas
+    state.trucks.forEach((truck) => {
+      Vehicle.updateOne(
+        { registrationNumber: truck.registrationNumber },
+        {
+          $set: {
+            'currentLocation.coordinates': [truck.currentLocation[1], truck.currentLocation[0]], // [lng, lat] GeoJSON
+            status: isTruckOperational(state, truck) ? 'active' : 'on_break',
+            lastUpdated: new Date(currentTime),
           },
         }
       ).catch(() => {});
@@ -423,6 +439,12 @@ const tickLogisticsLiveState = (state) => {
 
     if (distanceToFacility <= 0.09 && currentTime - truck.lastFacilityVisitAt > 90000) {
       truck.lastFacilityVisitAt = currentTime;
+      // Reset vehicle load in Atlas when unloaded at transfer facility
+      Vehicle.updateOne(
+        { registrationNumber: truck.registrationNumber },
+        { $set: { currentLoad: 0, lastUpdated: new Date(currentTime) } }
+      ).catch(() => {});
+
       pushActivity(state, {
         id: `activity-${currentTime}-${truck.registrationNumber}`,
         time: nowTimeLabel(),
@@ -456,7 +478,7 @@ const tickLogisticsLiveState = (state) => {
         bin.lastCollectedAt = new Date(currentTime);
         state.completedPickups += 1;
 
-        // Persist pickup to MongoDB Atlas immediately
+        // 1. Persist bin clearance to MongoDB Atlas
         Bin.updateOne(
           { binId: bin.binId },
           {
@@ -467,6 +489,24 @@ const tickLogisticsLiveState = (state) => {
             },
           }
         ).catch((err) => console.error(`Error updating bin ${bin.binId} in Atlas:`, err.message));
+
+        // 2. Increment totalCollections and currentLoad on Vehicle in Atlas
+        Vehicle.updateOne(
+          { registrationNumber: truck.registrationNumber },
+          {
+            $inc: { totalCollections: 1, currentLoad: 50 },
+            $set: { lastUpdated: new Date(currentTime) },
+          }
+        ).catch(() => {});
+
+        // 3. Increment wasteCollected on Route in Atlas
+        Route.updateOne(
+          { routeId: truck.routeId },
+          {
+            $inc: { wasteCollected: 50 },
+            $set: { updatedAt: new Date(currentTime) },
+          }
+        ).catch(() => {});
 
         pushActivity(state, {
           id: `activity-${currentTime}-${bin.binId}`,
@@ -598,18 +638,24 @@ const seedChennaiDemoDataInternal = async () => {
     const vehicle = await Vehicle.findOneAndUpdate(
       { registrationNumber: seedVehicle.registrationNumber },
       {
-        vehicleId: seedVehicle.vehicleId,
-        registrationNumber: seedVehicle.registrationNumber,
-        driverName: seedVehicle.driverName,
-        driverContact: seedVehicle.driverContact,
-        vehicleType: seedVehicle.vehicleType,
-        capacity: seedVehicle.capacity,
-        currentLocation: {
-          type: 'Point',
-          coordinates: [seedVehicle.longitude, seedVehicle.latitude],
+        $set: {
+          vehicleId: seedVehicle.vehicleId,
+          registrationNumber: seedVehicle.registrationNumber,
+          driverName: seedVehicle.driverName,
+          driverContact: seedVehicle.driverContact,
+          vehicleType: seedVehicle.vehicleType,
+          capacity: seedVehicle.capacity,
         },
-        status: seedVehicle.status,
-        lastUpdated: new Date(),
+        $setOnInsert: {
+          currentLocation: {
+            type: 'Point',
+            coordinates: [seedVehicle.longitude, seedVehicle.latitude],
+          },
+          status: seedVehicle.status,
+          totalCollections: 0,
+          currentLoad: 0,
+          lastUpdated: new Date(),
+        },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -940,7 +986,19 @@ export const updateLogisticsLiveToggle = async (req, res) => {
       if (truck) {
         truck.isEnabled = enabled;
         truck.status = enabled ? 'active' : 'paused';
+
+        // Persist vehicle status to Atlas
+        Vehicle.updateOne(
+          { vehicleId: truck.vehicleId },
+          { $set: { status: enabled ? 'active' : 'on_break', lastUpdated: new Date() } }
+        ).catch(() => {});
       }
+
+      // Persist route status to Atlas
+      Route.updateOne(
+        { routeId: route.routeId },
+        { $set: { status: enabled ? 'in_progress' : 'planned', updatedAt: new Date() } }
+      ).catch(() => {});
 
       pushActivity(logisticsLiveState, {
         id: `activity-${Date.now()}-${route.routeId}`,
@@ -962,6 +1020,12 @@ export const updateLogisticsLiveToggle = async (req, res) => {
 
       truck.isEnabled = enabled;
       truck.status = enabled ? 'active' : 'paused';
+
+      // Persist truck status to Atlas
+      Vehicle.updateOne(
+        { vehicleId: truck.vehicleId },
+        { $set: { status: enabled ? 'active' : 'on_break', lastUpdated: new Date() } }
+      ).catch(() => {});
 
       pushActivity(logisticsLiveState, {
         id: `activity-${Date.now()}-${truck.vehicleId}`,
