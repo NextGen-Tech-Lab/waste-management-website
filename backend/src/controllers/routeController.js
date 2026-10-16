@@ -920,6 +920,29 @@ export const getLogisticsMapData = async (req, res) => {
   }
 };
 
+let simulationInterval = null;
+
+const ensureSimulationRunning = async () => {
+  if (!logisticsLiveState) {
+    logisticsLiveState = await initializeLogisticsLiveState();
+  }
+  if (!simulationInterval) {
+    simulationInterval = setInterval(() => {
+      try {
+        if (logisticsLiveState) {
+          tickLogisticsLiveState(logisticsLiveState);
+        }
+      } catch (err) {
+        console.error('Simulation loop error:', err.message);
+      }
+    }, 2500);
+    console.log('🚀 Live logistics autonomous daemon active (updating Atlas every 2.5s)');
+  }
+};
+
+// Start background daemon immediately
+ensureSimulationRunning().catch((e) => console.error('Error starting simulation daemon:', e));
+
 /**
  * Backend-driven live logistics snapshot.
  * Route: GET /api/routes/logistics-live?city=chennai
@@ -934,11 +957,8 @@ export const getLogisticsLiveData = async (req, res) => {
       });
     }
 
-    if (!logisticsLiveState) {
-      logisticsLiveState = await initializeLogisticsLiveState();
-    }
+    await ensureSimulationRunning();
 
-    tickLogisticsLiveState(logisticsLiveState);
     return res.status(200).json(getLiveSnapshot());
   } catch (error) {
     return res.status(500).json({
