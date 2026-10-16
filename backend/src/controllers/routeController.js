@@ -268,16 +268,24 @@ const isTruckOperational = (state, truck) => {
 const initializeLogisticsLiveState = async () => {
   await seedChennaiDemoDataInternal();
 
+  const existingBins = await Bin.find({}).lean();
+  const dbBinsMap = existingBins.reduce((acc, b) => {
+    acc[b.binId] = b;
+    return acc;
+  }, {});
+
   const binsByCode = CHENNAI_BIN_SEED.reduce((acc, seedBin) => {
+    const dbBin = dbBinsMap[seedBin.binId];
+    const initialFill = dbBin?.currentFillLevel !== undefined ? dbBin.currentFillLevel : seedBin.fillLevel;
     acc[seedBin.binId] = {
       id: seedBin.binId,
       binId: seedBin.binId,
-      wasteType: seedBin.wasteType,
+      wasteType: dbBin?.wasteType || seedBin.wasteType,
       area: seedBin.area,
       location: [seedBin.latitude, seedBin.longitude],
-      dynamicFillLevel: seedBin.fillLevel,
-      lastCollectedAt: null,
-      status: seedBin.fillLevel >= 85 ? 'full' : 'active',
+      dynamicFillLevel: initialFill,
+      lastCollectedAt: dbBin?.lastCollectedAt || null,
+      status: initialFill >= 85 ? 'full' : 'active',
     };
     return acc;
   }, {});
@@ -372,6 +380,22 @@ const tickLogisticsLiveState = (state) => {
     bin.status = bin.dynamicFillLevel >= 85 ? 'full' : 'active';
   });
 
+  // Sync fill levels to MongoDB Atlas every 4 seconds so Atlas reflects dynamic changes
+  if (!state.lastAtlasSyncAt || currentTime - state.lastAtlasSyncAt >= 4000) {
+    state.lastAtlasSyncAt = currentTime;
+    Object.values(state.binsByCode).forEach((bin) => {
+      Bin.updateOne(
+        { binId: bin.binId },
+        {
+          $set: {
+            currentFillLevel: bin.dynamicFillLevel,
+            status: bin.status,
+          },
+        }
+      ).catch(() => {});
+    });
+  }
+
   state.trucks.forEach((truck) => {
     const route = state.routes.find((item) => item.routeId === truck.routeId);
     if (!route || route.totalDistanceKm <= 0) {
@@ -431,6 +455,18 @@ const tickLogisticsLiveState = (state) => {
         bin.status = 'active';
         bin.lastCollectedAt = new Date(currentTime);
         state.completedPickups += 1;
+
+        // Persist pickup to MongoDB Atlas immediately
+        Bin.updateOne(
+          { binId: bin.binId },
+          {
+            $set: {
+              currentFillLevel: 0,
+              status: 'active',
+              lastCollectedAt: bin.lastCollectedAt,
+            },
+          }
+        ).catch((err) => console.error(`Error updating bin ${bin.binId} in Atlas:`, err.message));
 
         pushActivity(state, {
           id: `activity-${currentTime}-${bin.binId}`,
@@ -530,21 +566,25 @@ const seedChennaiDemoDataInternal = async () => {
     const bin = await Bin.findOneAndUpdate(
       { binId: seedBin.binId },
       {
-        binId: seedBin.binId,
-        location: {
-          type: 'Point',
-          coordinates: [seedBin.longitude, seedBin.latitude],
+        $set: {
+          binId: seedBin.binId,
+          location: {
+            type: 'Point',
+            coordinates: [seedBin.longitude, seedBin.latitude],
+          },
+          address: {
+            street: seedBin.area,
+            city: 'Chennai',
+            state: 'Tamil Nadu',
+            zipcode: '600001',
+          },
+          wasteType: seedBin.wasteType,
+          capacity: 120,
         },
-        address: {
-          street: seedBin.area,
-          city: 'Chennai',
-          state: 'Tamil Nadu',
-          zipcode: '600001',
+        $setOnInsert: {
+          currentFillLevel: seedBin.fillLevel,
+          status: seedBin.fillLevel >= 85 ? 'full' : 'active',
         },
-        wasteType: seedBin.wasteType,
-        capacity: 120,
-        currentFillLevel: seedBin.fillLevel,
-        status: seedBin.fillLevel >= 85 ? 'full' : 'active',
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
