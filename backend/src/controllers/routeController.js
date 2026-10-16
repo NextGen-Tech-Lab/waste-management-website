@@ -178,7 +178,7 @@ const getDistanceKm = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadiusKm * c;
 };
@@ -329,11 +329,16 @@ const initializeLogisticsLiveState = async () => {
     const firstSegmentDistance = route.segments[0]?.distanceKm || 0;
     const progressKm = Math.max(0, firstSegmentDistance - 0.05 - index * 0.01);
     const position = interpolatePosition(route, progressKm);
+    const capacity = seededVehicle.capacity || 1800;
     return {
       vehicleId: seededVehicle.vehicleId,
       registrationNumber: seededVehicle.registrationNumber,
       driverName: seededVehicle.driverName,
       driverContact: seededVehicle.driverContact,
+      capacity,
+      currentLoad: 0,
+      currentFillLevel: 0,
+      totalCollections: 0,
       routeId: route.routeId,
       routeName: route.routeName,
       speedKmh: LIVE_TRUCK_SPEED_KMH,
@@ -380,8 +385,8 @@ const tickLogisticsLiveState = (state) => {
     bin.status = bin.dynamicFillLevel >= 85 ? 'full' : 'active';
   });
 
-  // Sync live telemetry to MongoDB Atlas every 4 seconds so Atlas documents update in real time
-  if (!state.lastAtlasSyncAt || currentTime - state.lastAtlasSyncAt >= 4000) {
+  // Sync live telemetry to MongoDB Atlas every 2.5 seconds so Atlas documents update in real time
+  if (!state.lastAtlasSyncAt || currentTime - state.lastAtlasSyncAt >= 2500) {
     state.lastAtlasSyncAt = currentTime;
 
     // 1. Sync Bin fill levels & status
@@ -394,21 +399,24 @@ const tickLogisticsLiveState = (state) => {
             status: bin.status,
           },
         }
-      ).catch(() => {});
+      ).catch(() => { });
     });
 
-    // 2. Sync Moving Vehicle coordinates & operational status to Atlas
+    // 2. Sync Moving Vehicle coordinates, load, and fill level to Atlas
     state.trucks.forEach((truck) => {
       Vehicle.updateOne(
         { registrationNumber: truck.registrationNumber },
         {
           $set: {
             'currentLocation.coordinates': [truck.currentLocation[1], truck.currentLocation[0]], // [lng, lat] GeoJSON
+            currentLoad: truck.currentLoad || 0,
+            currentFillLevel: truck.currentFillLevel || Math.round(((truck.currentLoad || 0) / (truck.capacity || 1800)) * 100),
+            totalCollections: truck.totalCollections || 0,
             status: isTruckOperational(state, truck) ? 'active' : 'on_break',
             lastUpdated: new Date(currentTime),
           },
         }
-      ).catch(() => {});
+      ).catch((err) => console.error(`Error updating vehicle in Atlas:`, err.message));
     });
   }
 
@@ -439,17 +447,19 @@ const tickLogisticsLiveState = (state) => {
 
     if (distanceToFacility <= 0.09 && currentTime - truck.lastFacilityVisitAt > 90000) {
       truck.lastFacilityVisitAt = currentTime;
-      // Reset vehicle load in Atlas when unloaded at transfer facility
+      // Reset truck capacity / load at transfer facility
+      truck.currentLoad = 0;
+      truck.currentFillLevel = 0;
       Vehicle.updateOne(
         { registrationNumber: truck.registrationNumber },
-        { $set: { currentLoad: 0, lastUpdated: new Date(currentTime) } }
-      ).catch(() => {});
+        { $set: { currentLoad: 0, currentFillLevel: 0, lastUpdated: new Date(currentTime) } }
+      ).catch(() => { });
 
       pushActivity(state, {
         id: `activity-${currentTime}-${truck.registrationNumber}`,
         time: nowTimeLabel(),
         title: `${truck.registrationNumber} unloaded at transfer facility`,
-        detail: `${truck.routeName} completed a disposal cycle at the common intersection point.`,
+        detail: `${truck.routeName} completed disposal cycle. Truck capacity reset to 0L.`,
         note: state.facility.name,
         tone: 'info',
       });
@@ -473,10 +483,16 @@ const tickLogisticsLiveState = (state) => {
         currentTime - truck.lastBinCollectionAt > 3000
       ) {
         truck.lastBinCollectionAt = currentTime;
+        const emptiedLiters = Math.round((bin.capacity || 120) * (bin.dynamicFillLevel / 100)) || 80;
         bin.dynamicFillLevel = 0;
         bin.status = 'active';
         bin.lastCollectedAt = new Date(currentTime);
         state.completedPickups += 1;
+
+        // Increase truck currentLoad & currentFillLevel
+        truck.totalCollections = (truck.totalCollections || 0) + 1;
+        truck.currentLoad = Math.min(truck.capacity || 1800, (truck.currentLoad || 0) + emptiedLiters);
+        truck.currentFillLevel = Math.round((truck.currentLoad / (truck.capacity || 1800)) * 100);
 
         // 1. Persist bin clearance to MongoDB Atlas
         Bin.updateOne(
@@ -490,29 +506,34 @@ const tickLogisticsLiveState = (state) => {
           }
         ).catch((err) => console.error(`Error updating bin ${bin.binId} in Atlas:`, err.message));
 
-        // 2. Increment totalCollections and currentLoad on Vehicle in Atlas
+        // 2. Persist updated truck capacity, load, and coordinates to Vehicle in Atlas
         Vehicle.updateOne(
           { registrationNumber: truck.registrationNumber },
           {
-            $inc: { totalCollections: 1, currentLoad: 50 },
-            $set: { lastUpdated: new Date(currentTime) },
+            $set: {
+              currentLoad: truck.currentLoad,
+              currentFillLevel: truck.currentFillLevel,
+              totalCollections: truck.totalCollections,
+              'currentLocation.coordinates': [truck.currentLocation[1], truck.currentLocation[0]],
+              lastUpdated: new Date(currentTime),
+            },
           }
-        ).catch(() => {});
+        ).catch(() => { });
 
         // 3. Increment wasteCollected on Route in Atlas
         Route.updateOne(
           { routeId: truck.routeId },
           {
-            $inc: { wasteCollected: 50 },
+            $inc: { wasteCollected: emptiedLiters },
             $set: { updatedAt: new Date(currentTime) },
           }
-        ).catch(() => {});
+        ).catch(() => { });
 
         pushActivity(state, {
           id: `activity-${currentTime}-${bin.binId}`,
           time: nowTimeLabel(),
-          title: `${truck.registrationNumber} cleared ${bin.binId}`,
-          detail: `Dustbin at ${bin.area} emptied while running ${truck.routeName}.`,
+          title: `${truck.registrationNumber} collected ${emptiedLiters}L from ${bin.binId}`,
+          detail: `Truck fill level is now ${truck.currentLoad}L / ${truck.capacity}L (${truck.currentFillLevel}% full).`,
           note: `Facility handoff: ${state.facility.name}`,
           tone: 'success',
         });
@@ -543,21 +564,31 @@ const getLiveSnapshot = () => {
     truckRegistration: route.truckRegistration,
   }));
 
-  const trucks = state.trucks.map((truck) => ({
-    vehicleId: truck.vehicleId,
-    registrationNumber: truck.registrationNumber,
-    driverName: truck.driverName,
-    driverContact: truck.driverContact,
-    routeId: truck.routeId,
-    routeName: truck.routeName,
-    status: isTruckOperational(state, truck) ? 'active' : 'paused',
-    isEnabled: truck.isEnabled !== false,
-    speedKmh: truck.speedKmh,
-    currentLocation: {
-      latitude: truck.currentLocation[0],
-      longitude: truck.currentLocation[1],
-    },
-  }));
+  const trucks = state.trucks.map((truck) => {
+    const capacity = truck.capacity || 1800;
+    const currentLoad = truck.currentLoad || 0;
+    const fillLevel = truck.currentFillLevel !== undefined ? truck.currentFillLevel : Math.round((currentLoad / capacity) * 100);
+    return {
+      vehicleId: truck.vehicleId,
+      registrationNumber: truck.registrationNumber,
+      driverName: truck.driverName,
+      driverContact: truck.driverContact,
+      capacity,
+      currentLoad,
+      currentFillLevel: fillLevel,
+      fillLevel,
+      totalCollections: truck.totalCollections || 0,
+      routeId: truck.routeId,
+      routeName: truck.routeName,
+      status: isTruckOperational(state, truck) ? 'active' : 'paused',
+      isEnabled: truck.isEnabled !== false,
+      speedKmh: truck.speedKmh,
+      currentLocation: {
+        latitude: truck.currentLocation[0],
+        longitude: truck.currentLocation[1],
+      },
+    };
+  });
 
   const formattedBins = bins.map((bin) => ({
     binId: bin.binId,
@@ -940,7 +971,7 @@ const ensureSimulationRunning = async () => {
   }
 };
 
-// Start background daemon immediately
+// Start background daemon immediately on backend startup
 ensureSimulationRunning().catch((e) => console.error('Error starting simulation daemon:', e));
 
 /**
@@ -1011,14 +1042,14 @@ export const updateLogisticsLiveToggle = async (req, res) => {
         Vehicle.updateOne(
           { vehicleId: truck.vehicleId },
           { $set: { status: enabled ? 'active' : 'on_break', lastUpdated: new Date() } }
-        ).catch(() => {});
+        ).catch(() => { });
       }
 
       // Persist route status to Atlas
       Route.updateOne(
         { routeId: route.routeId },
         { $set: { status: enabled ? 'in_progress' : 'planned', updatedAt: new Date() } }
-      ).catch(() => {});
+      ).catch(() => { });
 
       pushActivity(logisticsLiveState, {
         id: `activity-${Date.now()}-${route.routeId}`,
@@ -1045,7 +1076,7 @@ export const updateLogisticsLiveToggle = async (req, res) => {
       Vehicle.updateOne(
         { vehicleId: truck.vehicleId },
         { $set: { status: enabled ? 'active' : 'on_break', lastUpdated: new Date() } }
-      ).catch(() => {});
+      ).catch(() => { });
 
       pushActivity(logisticsLiveState, {
         id: `activity-${Date.now()}-${truck.vehicleId}`,

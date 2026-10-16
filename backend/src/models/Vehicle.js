@@ -39,6 +39,10 @@ const vehicleSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    currentFillLevel: {
+      type: Number,
+      default: 0, // in percentage (0 - 100%)
+    },
     currentLocation: {
       type: {
         type: String,

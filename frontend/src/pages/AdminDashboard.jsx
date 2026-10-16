@@ -604,6 +604,7 @@ const AdminDashboard = () => {
                         <strong>Truck:</strong> {truck.registrationNumber}<br />
                         <strong>Driver:</strong> {truck.driverName}<br />
                         <strong>Route:</strong> {truck.routeName}<br />
+                        <strong>Truck Load:</strong> {truck.currentLoad || 0} / {truck.capacity || 1800} L ({truck.fillLevel || 0}%)<br />
                         <strong>Speed:</strong> {truck.speedKmh} km/h<br />
                         <strong>State:</strong> {isOperational ? 'Running' : 'Paused'}
                       </Popup>
@@ -618,7 +619,7 @@ const AdminDashboard = () => {
                 <span>Truck</span>
                 <span>Driver</span>
                 <span>Route Name</span>
-                <span>Speed</span>
+                <span>Truck Capacity</span>
                 <span>Live Position</span>
               </div>
               {(liveSnapshot.trucks || []).map((truck) => {
@@ -634,7 +635,7 @@ const AdminDashboard = () => {
                   <span>{truck.registrationNumber}</span>
                   <span>{truck.driverName}</span>
                   <span>{truck.routeName}</span>
-                  <span>{isOperational ? `${truck.speedKmh} km/h` : 'Paused'}</span>
+                  <span>{truck.currentLoad || 0}L ({truck.fillLevel || 0}% full)</span>
                   <span>{truck.currentLocation.latitude.toFixed(4)}, {truck.currentLocation.longitude.toFixed(4)}</span>
                 </button>
                 );
