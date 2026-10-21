@@ -15,6 +15,7 @@ import vehicleRoutes from './src/routes/vehicles.js';
 import complaintRoutes from './src/routes/complaints.js';
 import educationRoutes from './src/routes/education.js';
 import routeRoutes from './src/routes/routes.js';
+import awsRoutes from './src/routes/aws.js';
 
 // Load environment variables
 dotenv.config({ path: '.env' });
@@ -66,6 +67,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/education', educationRoutes);
 app.use('/api/routes', routeRoutes);
+app.use('/api/aws', awsRoutes);
 
 // 404 handler
 app.use(notFound);

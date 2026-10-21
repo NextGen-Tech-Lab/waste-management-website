@@ -1,5 +1,6 @@
 import Complaint from '../models/Complaint.js';
 import { v4 as uuidv4 } from 'uuid';
+import { uploadBase64ToS3 } from '../services/s3Service.js';
 
 const COMPLAINT_STATUSES = {
   PENDING: 'pending',
@@ -15,21 +16,37 @@ const withPopulatedRelations = (query) => {
     .populate('statusHistory.changedBy', 'name email');
 };
 
-const normalizeAttachments = (attachments = []) => {
+const processAttachmentsWithS3 = async (attachments = []) => {
   if (!Array.isArray(attachments)) {
     return [];
   }
 
-  return attachments
-    .filter((attachment) => attachment && attachment.url)
-    .slice(0, 2)
-    .map((attachment) => ({
-      url: attachment.url,
+  const processed = [];
+  for (const attachment of attachments.slice(0, 2)) {
+    if (!attachment || !attachment.url) continue;
+
+    let finalUrl = attachment.url;
+    // If it's a base64 image data URL, upload directly to Amazon S3!
+    if (typeof attachment.url === 'string' && attachment.url.startsWith('data:image/')) {
+      try {
+        const s3Result = await uploadBase64ToS3(attachment.url, attachment.name || 'complaint.jpg');
+        finalUrl = s3Result.url;
+        console.log(`✅ Uploaded complaint attachment to Amazon S3: ${finalUrl}`);
+      } catch (s3Err) {
+        console.warn('⚠️ S3 upload fallback:', s3Err.message);
+      }
+    }
+
+    processed.push({
+      url: finalUrl,
       type: 'image',
       name: attachment.name || '',
       size: attachment.size || 0,
       uploadedAt: attachment.uploadedAt ? new Date(attachment.uploadedAt) : new Date(),
-    }));
+    });
+  }
+
+  return processed;
 };
 
 const appendHistoryEntry = (complaint, status, changedBy, note = '') => {
@@ -88,7 +105,7 @@ export const createComplaint = async (req, res) => {
       subject,
       description,
       severity: severity || 'medium',
-      attachments: normalizeAttachments(attachments),
+      attachments: await processAttachmentsWithS3(attachments),
       status: COMPLAINT_STATUSES.PENDING,
     };
 
